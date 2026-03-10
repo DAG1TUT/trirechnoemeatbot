@@ -90,6 +90,19 @@ def update_expense_category(user_id: int, expense_id: int, category: str) -> boo
     return updated
 
 
+def delete_all_expenses(user_id: int) -> int:
+    """Удаляет все траты пользователя. Возвращает количество удалённых записей."""
+    conn = get_connection()
+    cur = conn.execute(
+        "DELETE FROM expenses WHERE user_id = ?",
+        (user_id,),
+    )
+    conn.commit()
+    deleted = cur.rowcount or 0
+    conn.close()
+    return deleted
+
+
 def get_summary_by_category(user_id: int, period_days: int = 30):
     conn = get_connection()
     since = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)

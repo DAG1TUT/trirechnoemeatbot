@@ -144,6 +144,7 @@ def parse_expense_message(text: str) -> Tuple[Optional[float], Optional[str]]:
 BTN_TOTAL = "📊 Общие траты"
 BTN_CATS = "📁 По категориям"
 BTN_LIST = "📋 Последние траты"
+BTN_RESET = "♻️ Сбросить расходы"
 
 def _main_menu_keyboard():
     """Инлайн-кнопки под сообщением."""
@@ -160,6 +161,7 @@ def _reply_keyboard():
         [
             [KeyboardButton(BTN_TOTAL), KeyboardButton(BTN_LIST)],
             [KeyboardButton(BTN_CATS)],
+            [KeyboardButton(BTN_RESET)],
         ],
         resize_keyboard=True,
     )
@@ -245,6 +247,24 @@ async def cmd_month(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     total = db.get_total(user_id, period_days=30)
     await update.message.reply_text(f"За последние 30 дней потрачено: {total:,.0f} ₽")
+
+
+async def cmd_reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Запрос на полное удаление всех трат пользователя (с подтверждением)."""
+    user_id = update.effective_user.id
+    kb = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("✅ Да, удалить все мои траты", callback_data="reset_confirm"),
+        ],
+        [
+            InlineKeyboardButton("❌ Отмена", callback_data="reset_cancel"),
+        ],
+    ])
+    await update.message.reply_text(
+        "Точно удалить **все** твои траты из бота? Это действие нельзя отменить.",
+        reply_markup=kb,
+        parse_mode="Markdown",
+    )
 
 
 async def cmd_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -432,6 +452,24 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await query.answer("Не удалось изменить")
 
+    elif data == "reset_confirm":
+        deleted = db.delete_all_expenses(user_id)
+        text = (
+            "Все твои траты удалены из бота."
+            if deleted
+            else "У тебя и так нет сохранённых трат."
+        )
+        await query.edit_message_text(
+            text,
+            reply_markup=_main_menu_keyboard(),
+        )
+
+    elif data == "reset_cancel":
+        await query.edit_message_text(
+            "Удаление отменено.",
+            reply_markup=_main_menu_keyboard(),
+        )
+
 
 async def _send_menu_response(update: Update, context: ContextTypes.DEFAULT_TYPE, button_data: str):
     """Ответ на нажатие кнопки меню (когда нажали Reply-клавиатуру)."""
@@ -465,6 +503,9 @@ async def _send_menu_response(update: Update, context: ContextTypes.DEFAULT_TYPE
             buttons.append(row)
         buttons.append([InlineKeyboardButton("← Меню", callback_data="btn_menu")])
         await msg("Выбери категорию (30 дней):", reply_markup=InlineKeyboardMarkup(buttons))
+    elif button_data == "btn_reset":
+        # Используем ту же логику, что и команда /reset
+        await cmd_reset(update, context)
 
 
 def _voice_to_text(ogg_path: str) -> Tuple[Optional[str], Optional[str]]:
@@ -573,6 +614,9 @@ async def handle_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text == BTN_CATS:
         await _send_menu_response(update, context, "btn_cats")
         return
+    if text == BTN_RESET:
+        await _send_menu_response(update, context, "btn_reset")
+        return
 
     amount, description = parse_expense_message(text)
     if amount is None:
@@ -612,6 +656,7 @@ def main():
     app.add_handler(CommandHandler("total", cmd_total))
     app.add_handler(CommandHandler("list", cmd_list))
     app.add_handler(CommandHandler("month", cmd_month))
+    app.add_handler(CommandHandler("reset", cmd_reset))
     app.add_handler(CommandHandler("cat", cmd_category))
     app.add_handler(CommandHandler("menu", _cmd_menu))
     app.add_handler(CallbackQueryHandler(handle_button))
