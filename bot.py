@@ -34,7 +34,9 @@ try:
                     os.environ["PATH"] = _p + os.pathsep + _path
                 break
     VOICE_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    # Логируем причину отключения голоса (полезно на Railway)
+    print(f"VOICE_DISABLED_IMPORT_ERROR: {e}")
     VOICE_AVAILABLE = False
 
 
