@@ -1,6 +1,15 @@
 expenses.db
 .env
+*.env
+!*.env.example
 __pycache__/
 *.pyc
 .venv/
 venv/
+shift_bot/venv/
+shift_bot/.env
+shift_bot/data/*.db
+shift_bot/ВСТАВЬ_ТОКЕН_СЮДА.txt
+shift_bot/config.env
+*.db
+.DS_Store

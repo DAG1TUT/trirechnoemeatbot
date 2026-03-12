@@ -1,11 +1,7 @@
-[phases.setup]
-# Установить ffmpeg внутрь контейнера Railway
-nixPkgs = ['ffmpeg']
-
 [phases.install]
-# Установить Python-зависимости
-cmds = ['pip install -r requirements.txt']
+# Зависимости бота учёта смен (shift_bot)
+cmds = ['pip install -r shift_bot/requirements.txt']
 
 [start]
-# Стартовая команда для Railway
-cmd = 'python bot.py'
+# Запуск бота из папки shift_bot
+cmd = 'cd shift_bot && python run.py'

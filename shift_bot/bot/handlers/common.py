@@ -1,0 +1,75 @@
+"""
+Общие обработчики: /start, привязка продавца, ошибки.
+"""
+import logging
+
+from aiogram import Router, F
+from aiogram.filters import CommandStart
+from aiogram.types import Message, CallbackQuery
+
+from bot.keyboards import kb_seller_main, kb_admin_main, kb_choose_seller
+from bot.middlewares.auth import get_session, get_seller, get_role
+from services import seller_service
+
+router = Router()
+logger = logging.getLogger(__name__)
+
+
+@router.message(CommandStart())
+async def cmd_start(message: Message, session=None, role: str = "", seller=None, **kwargs):
+    """Приветствие и главное меню в зависимости от роли."""
+    session = session or kwargs.get("session")
+    role = role or kwargs.get("role", "guest")
+    seller = seller or kwargs.get("seller")
+
+    if role == "admin":
+        await message.answer(
+            "👋 Добро пожаловать! Вы вошли как руководитель.\n\n"
+            "Используйте меню ниже для просмотра смен и отчётов.",
+            reply_markup=kb_admin_main(),
+        )
+        return
+    if role == "seller":
+        await message.answer(
+            f"👋 Здравствуйте, {seller.full_name}!\n\n"
+            "Выберите действие в меню ниже.",
+            reply_markup=kb_seller_main(),
+        )
+        return
+    # Гость: предложить привязаться к продавцу
+    sellers = await seller_service.get_sellers_for_binding(session)
+    if not sellers or all(s.telegram_id is not None for s in sellers):
+        await message.answer(
+            "Список продавцов для привязки пуст или все аккаунты уже привязаны. "
+            "Обратитесь к руководителю."
+        )
+        return
+    # Показываем только непривязанных
+    to_show = [s for s in sellers if s.telegram_id is None]
+    if not to_show:
+        await message.answer("Все продавцы уже привязаны. Обратитесь к руководителю.")
+        return
+    await message.answer(
+        "👋 Добро пожаловать! Выберите себя из списка продавцов:",
+        reply_markup=kb_choose_seller(to_show),
+    )
+
+
+@router.callback_query(F.data.startswith("bind_seller_"))
+async def cb_bind_seller(callback: CallbackQuery, session=None, **kwargs):
+    """Привязка telegram_id к выбранному продавцу."""
+    session = session or kwargs.get("session")
+    seller_id = int(callback.data.split("_")[-1])
+    telegram_id = callback.from_user.id
+    seller = await seller_service.bind_seller(session, seller_id, telegram_id)
+    await callback.answer()
+    if seller:
+        await callback.message.edit_text(
+            f"✅ Вы привязаны как {seller.full_name}. Нажмите /start для обновления меню."
+        )
+        await callback.message.answer(
+            f"👋 Здравствуйте, {seller.full_name}! Выберите действие:",
+            reply_markup=kb_seller_main(),
+        )
+    else:
+        await callback.message.edit_text("❌ Не удалось привязать аккаунт. Попробуйте снова или обратитесь к руководителю.")

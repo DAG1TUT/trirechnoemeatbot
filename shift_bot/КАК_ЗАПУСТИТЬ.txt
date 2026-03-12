@@ -1,0 +1,22 @@
+═══════════════════════════════════════════════════════════
+  КАК ЗАПУСТИТЬ БОТА (папка shift_bot)
+═══════════════════════════════════════════════════════════
+
+1. Вставьте токен
+   Откройте файл config.env и замените your_bot_token_here на свой токен.
+
+2. Откройте терминал в этой папке (shift_bot) и выполните:
+
+   cd shift_bot
+   python3 -m venv venv
+   source venv/bin/activate          (на Windows: venv\Scripts\activate)
+   pip install -r requirements.txt
+   python -m scripts.seed
+   python run.py
+
+   Или если venv уже есть:
+   cd shift_bot
+   source venv/bin/activate
+   python run.py
+
+Готово. Напишите боту в Telegram /start.
