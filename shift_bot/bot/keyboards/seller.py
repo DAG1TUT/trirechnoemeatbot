@@ -43,7 +43,22 @@ def kb_confirm_close_shift() -> InlineKeyboardMarkup:
     """Подтверждение закрытия смены после ввода всех полей отчёта."""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="✅ Подтвердить", callback_data="report_confirm")],
-        [InlineKeyboardButton(text="❌ Отмена", callback_data="report_cancel")],
+        [
+            InlineKeyboardButton(text="✏️ Изменить", callback_data="report_edit"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="report_cancel"),
+        ],
+    ])
+
+
+def kb_edit_report_field() -> InlineKeyboardMarkup:
+    """Выбор поля отчёта для изменения."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💰 Выручка", callback_data="report_edit_revenue")],
+        [InlineKeyboardButton(text="💵 Остаток наличных", callback_data="report_edit_cash")],
+        [InlineKeyboardButton(text="📦 Остаток товара", callback_data="report_edit_stock")],
+        [InlineKeyboardButton(text="📉 Расходы", callback_data="report_edit_expenses")],
+        [InlineKeyboardButton(text="💬 Комментарий", callback_data="report_edit_comment")],
+        [InlineKeyboardButton(text="◀️ Назад", callback_data="report_edit_back")],
     ])
 
 

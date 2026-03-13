@@ -13,3 +13,4 @@ class ReportFSM(StatesGroup):
     expenses = State()
     comment = State()
     confirm = State()
+    editing = State()  # ввод нового значения при нажатии «Изменить»

@@ -11,7 +11,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from bot.keyboards.common import kb_cancel
-from bot.keyboards.seller import kb_confirm_close_shift
+from bot.keyboards.seller import kb_confirm_close_shift, kb_edit_report_field
 from bot.states.report import ReportFSM
 from bot.store import OPEN_SHIFT_BY_TELEGRAM
 from services import shift_service, report_service
@@ -27,6 +27,19 @@ def _parse_float(text: str) -> float | None:
         return float(s)
     except ValueError:
         return None
+
+
+def _format_summary(data: dict) -> str:
+    """Текст итогового отчёта для подтверждения."""
+    return (
+        "Проверьте данные:\n"
+        f"💰 Выручка: {data['revenue']:,.2f}\n"
+        f"💵 Остаток наличных: {data['cash_balance']:,.2f}\n"
+        f"📦 Остаток товара: {data['stock_balance']:,.2f}\n"
+        f"📉 Расходы: {data['expenses']:,.2f}\n"
+        f"💬 Комментарий: {data.get('comment', '—')}\n\n"
+        "Подтвердите закрытие смены:"
+    )
 
 
 @router.message(ReportFSM.revenue, F.text)
@@ -78,16 +91,74 @@ async def step_comment(message: Message, state: FSMContext, session, **kwargs):
     await state.update_data(comment=message.text.strip() or "—")
     await state.set_state(ReportFSM.confirm)
     data = await state.get_data()
-    summary = (
-        "Проверьте данные:\n"
-        f"💰 Выручка: {data['revenue']:,.2f}\n"
-        f"💵 Остаток наличных: {data['cash_balance']:,.2f}\n"
-        f"📦 Остаток товара: {data['stock_balance']:,.2f}\n"
-        f"📉 Расходы: {data['expenses']:,.2f}\n"
-        f"💬 Комментарий: {data.get('comment', '—')}\n\n"
-        "Подтвердите закрытие смены:"
+    await message.answer(_format_summary(data), reply_markup=kb_confirm_close_shift())
+
+
+@router.callback_query(ReportFSM.confirm, F.data == "report_edit")
+async def report_edit_start(callback: CallbackQuery, state: FSMContext, **kwargs):
+    """Показать выбор поля для изменения."""
+    await callback.answer()
+    await callback.message.edit_text("✏️ Что изменить?", reply_markup=kb_edit_report_field())
+
+
+_EDIT_PROMPTS = {
+    "revenue": "Введите новое значение выручки (число):",
+    "cash_balance": "Введите новый остаток наличных (число):",
+    "stock_balance": "Введите новый остаток товара (число):",
+    "expenses": "Введите новые расходы (число):",
+    "comment": "Введите новый комментарий (или «—»):",
+}
+
+
+@router.callback_query(ReportFSM.confirm, F.data.startswith("report_edit_"))
+async def report_edit_choose(callback: CallbackQuery, state: FSMContext, **kwargs):
+    """Выбрано поле для изменения — запрашиваем новое значение."""
+    data_name = callback.data.replace("report_edit_", "")
+    if data_name == "back":
+        data = await state.get_data()
+        await callback.answer()
+        await callback.message.edit_text(_format_summary(data), reply_markup=kb_confirm_close_shift())
+        return
+    field_map = {
+        "revenue": "revenue",
+        "cash": "cash_balance",
+        "stock": "stock_balance",
+        "expenses": "expenses",
+        "comment": "comment",
+    }
+    edit_field = field_map.get(data_name)
+    if not edit_field:
+        await callback.answer()
+        return
+    await state.update_data(edit_field=edit_field)
+    await state.set_state(ReportFSM.editing)
+    await callback.answer()
+    await callback.message.edit_text(
+        _EDIT_PROMPTS[edit_field],
+        reply_markup=kb_cancel(),
     )
-    await message.answer(summary, reply_markup=kb_confirm_close_shift())
+
+
+@router.message(ReportFSM.editing, F.text)
+async def report_edit_value(message: Message, state: FSMContext, **kwargs):
+    """Принято новое значение при редактировании — обновляем данные и снова показываем итог."""
+    data = await state.get_data()
+    edit_field = data.get("edit_field")
+    if not edit_field:
+        await state.set_state(ReportFSM.confirm)
+        return
+    if edit_field == "comment":
+        value = message.text.strip() or "—"
+        await state.update_data(comment=value, edit_field=None)
+    else:
+        val = _parse_float(message.text)
+        if val is None or val < 0:
+            await message.answer(f"Введите число. {_EDIT_PROMPTS[edit_field]}")
+            return
+        await state.update_data(**{edit_field: val}, edit_field=None)
+    await state.set_state(ReportFSM.confirm)
+    new_data = await state.get_data()
+    await message.answer(_format_summary(new_data), reply_markup=kb_confirm_close_shift())
 
 
 @router.callback_query(ReportFSM.confirm, F.data == "report_confirm")
@@ -146,6 +217,16 @@ async def report_confirm(callback: CallbackQuery, state: FSMContext, session, se
                 except Exception as e:
                     logger.exception("Send final report to admin %s: %s", aid, e)
             await report_service.mark_final_report_sent(session, today)
+
+
+@router.callback_query(ReportFSM.editing, F.data == "report_cancel")
+async def report_edit_cancel(callback: CallbackQuery, state: FSMContext, **kwargs):
+    """Отмена редактирования — вернуться к итогу отчёта."""
+    await state.update_data(edit_field=None)
+    await state.set_state(ReportFSM.confirm)
+    data = await state.get_data()
+    await callback.answer("Отменено")
+    await callback.message.edit_text(_format_summary(data), reply_markup=kb_confirm_close_shift())
 
 
 @router.callback_query(F.data == "report_cancel")
