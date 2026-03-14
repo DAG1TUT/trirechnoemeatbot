@@ -231,3 +231,55 @@ async def admin_history_date(message: Message, state: FSMContext, session, role,
         return
     text = await report_service.get_daily_report_text(session, d)
     await message.answer(f"📅 Отчёт за {d.strftime('%d.%m.%Y')}:\n\n" + text)
+
+
+def _parse_period(text: str) -> tuple[date | None, date | None]:
+    """Парсит «ДД.ММ.ГГГГ - ДД.ММ.ГГГГ» или «ДД.ММ.ГГГГ-ДД.ММ.ГГГГ». Возвращает (start, end) или (None, None)."""
+    s = (text or "").strip()
+    if "-" not in s:
+        return None, None
+    parts = s.split("-", 1)
+    if len(parts) != 2:
+        return None, None
+    start = _parse_date(parts[0].strip())
+    end = _parse_date(parts[1].strip())
+    return start, end
+
+
+@router.message(F.text == "📁 Архив отчётов")
+async def admin_archive_start(message: Message, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        return
+    await state.set_state(AdminFSM.waiting_archive_period)
+    await message.answer(
+        "Введите период: дата начала и дата конца в формате\n"
+        "ДД.ММ.ГГГГ - ДД.ММ.ГГГГ\n"
+        "Например: 01.03.2025 - 07.03.2025"
+    )
+
+
+@router.message(AdminFSM.waiting_archive_period, F.text)
+async def admin_archive_period(message: Message, state: FSMContext, session, role, **kwargs):
+    """Обработка введённого периода для архива."""
+    if not _admin_only(role):
+        return
+    start, end = _parse_period(message.text)
+    await state.clear()
+    if not start or not end:
+        await message.answer(
+            "Неверный формат. Введите период так: ДД.ММ.ГГГГ - ДД.ММ.ГГГГ\n"
+            "Например: 01.03.2025 - 07.03.2025"
+        )
+        return
+    if start > end:
+        await message.answer("Дата начала не может быть позже даты конца. Введите период заново.")
+        return
+    text = await report_service.get_archive_report_text(session, start, end)
+    # Telegram лимит 4096 символов на сообщение
+    max_len = 4000
+    if len(text) <= max_len:
+        await message.answer(text)
+    else:
+        for i in range(0, len(text), max_len):
+            chunk = text[i : i + max_len]
+            await message.answer(chunk)

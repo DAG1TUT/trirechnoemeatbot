@@ -275,3 +275,50 @@ async def was_weekly_report_sent(session: AsyncSession, week_end_date: date) -> 
 async def mark_weekly_report_sent(session: AsyncSession, week_end_date: date) -> None:
     """Отметить, что недельная аналитика за неделю отправлена."""
     await weekly_report_status_repo.mark_weekly_report_sent(session, week_end_date)
+
+
+async def get_archive_report_text(
+    session: AsyncSession, start_date: date, end_date: date
+) -> str:
+    """
+    Отчёт за выбранный период: общая выручка, по дням, по точкам, по продавцам.
+    """
+    shifts = await shift_repo.get_closed_shifts_in_date_range(session, start_date, end_date)
+    shifts_with_report = [s for s in shifts if s.report is not None]
+    total_revenue = sum(s.report.revenue for s in shifts_with_report)
+
+    by_day: dict[date, tuple[float, int]] = defaultdict(lambda: (0.0, 0))
+    by_shop: dict[int, float] = defaultdict(float)
+    shop_names: dict[int, str] = {}
+    by_seller: dict[int, float] = defaultdict(float)
+    seller_names: dict[int, str] = {}
+    for s in shifts_with_report:
+        rev = s.report.revenue
+        d = s.shift_date
+        prev_sum, prev_cnt = by_day[d]
+        by_day[d] = (prev_sum + rev, prev_cnt + 1)
+        by_shop[s.shop_id] += rev
+        if s.shop:
+            shop_names[s.shop_id] = s.shop.address
+        by_seller[s.seller_id] += rev
+        if s.seller:
+            seller_names[s.seller_id] = s.seller.full_name
+
+    lines = [
+        f"📁 Архив отчётов: {start_date.strftime('%d.%m.%Y')} – {end_date.strftime('%d.%m.%Y')}\n",
+        f"💰 Общая выручка за период: {total_revenue:,.0f} ₽",
+        f"   Смен закрыто: {len(shifts_with_report)}\n",
+        "📅 По дням:",
+    ]
+    for d in sorted(by_day.keys()):
+        day_sum, day_cnt = by_day[d]
+        lines.append(f"  • {d.strftime('%d.%m.%Y')} — {day_sum:,.0f} ₽ (смен: {day_cnt})")
+    lines.append("\n📍 По точкам:")
+    for shop_id, rev in sorted(by_shop.items(), key=lambda x: -x[1]):
+        name = shop_names.get(shop_id, f"Точка {shop_id}")
+        lines.append(f"  • {name} — {rev:,.0f} ₽")
+    lines.append("\n👤 По продавцам:")
+    for seller_id, rev in sorted(by_seller.items(), key=lambda x: -x[1]):
+        name = seller_names.get(seller_id, f"Продавец {seller_id}")
+        lines.append(f"  • {name} — {rev:,.0f} ₽")
+    return "\n".join(lines)
