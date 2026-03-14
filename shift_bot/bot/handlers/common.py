@@ -10,6 +10,7 @@ from aiogram.fsm.context import FSMContext
 
 from bot.keyboards import kb_seller_main, kb_admin_main, kb_choose_seller
 from bot.keyboards.common import kb_cancel
+from bot.store import LOGGED_OUT_ADMIN_IDS
 from bot.states.admin import AdminLoginFSM
 from bot.middlewares.auth import get_session, get_seller, get_role
 from config import ADMIN_PASSWORD
@@ -88,6 +89,7 @@ async def admin_password_entered(message: Message, state: FSMContext, session, *
     telegram_id = message.from_user.id
     full_name = (message.from_user.full_name or "").strip() or "Руководитель"
     await admin_repo.ensure_admin(session, telegram_id, full_name)
+    LOGGED_OUT_ADMIN_IDS.discard(telegram_id)
     await state.clear()
     await message.answer(
         "👋 Добро пожаловать! Вы вошли как руководитель.\n\n"

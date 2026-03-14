@@ -14,6 +14,7 @@ def kb_admin_main() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="📄 Итоговый отчет")],
             [KeyboardButton(text="📅 История")],
             [KeyboardButton(text="⚠️ Незакрытые точки")],
+            [KeyboardButton(text="🚪 Выйти из режима администратора")],
         ],
         resize_keyboard=True,
     )

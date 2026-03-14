@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config import ADMIN_IDS
 from core.database import async_session_factory
 from repositories import admin_repo, seller_repo
+from bot.store import LOGGED_OUT_ADMIN_IDS
 
 
 def get_session(event: TelegramObject) -> AsyncSession | None:
@@ -49,8 +50,10 @@ class AuthMiddleware(BaseMiddleware):
             seller = None
 
             if telegram_id is not None:
-                # Проверка админа: сначала из .env, потом из БД
-                if telegram_id in ADMIN_IDS:
+                # Проверка админа: сначала из .env, потом из БД (если не вышел из режима админа)
+                if telegram_id in LOGGED_OUT_ADMIN_IDS:
+                    pass  # не даём роль админа
+                elif telegram_id in ADMIN_IDS:
                     role = "admin"
                 else:
                     admin = await admin_repo.get_admin_by_telegram_id(session, telegram_id)

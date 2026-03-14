@@ -11,6 +11,7 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
 from bot.keyboards import kb_admin_main
+from bot.store import LOGGED_OUT_ADMIN_IDS
 from services import shift_service, report_service, reminder_service
 from repositories import admin_repo
 from config import ADMIN_IDS
@@ -91,6 +92,18 @@ async def admin_unclosed(message: Message, session, role, **kwargs):
     for shop in unclosed:
         lines.append(f"• {shop.address}")
     await message.answer("\n".join(lines))
+
+
+@router.message(F.text == "🚪 Выйти из режима администратора")
+async def admin_logout(message: Message, session, role, telegram_id, **kwargs):
+    """Выход из режима администратора: убрать из БД и помечать как вышедшего."""
+    if not _admin_only(role):
+        return
+    await admin_repo.remove_admin_by_telegram_id(session, telegram_id)
+    LOGGED_OUT_ADMIN_IDS.add(telegram_id)
+    await message.answer(
+        "Вы вышли из режима администратора.\n\nНажмите /start для выбора роли (продавец или войти снова как руководитель)."
+    )
 
 
 from bot.states.admin import AdminFSM

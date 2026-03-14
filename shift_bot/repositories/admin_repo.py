@@ -33,3 +33,12 @@ async def ensure_admin(session: AsyncSession, telegram_id: int, full_name: str =
     await session.flush()
     await session.refresh(admin)
     return admin
+
+
+async def remove_admin_by_telegram_id(session: AsyncSession, telegram_id: int) -> bool:
+    """Удалить админа из БД по telegram_id. Возвращает True, если запись была и удалена."""
+    admin = await get_admin_by_telegram_id(session, telegram_id)
+    if not admin:
+        return False
+    await session.delete(admin)
+    return True
