@@ -5,14 +5,21 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime
+from collections import defaultdict
+from datetime import date, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models.shift import Shift
 from core.models.shift_report_edit import ShiftReportEdit
 from core.models.shop import Shop
-from repositories import daily_report_status_repo, shift_repo, shift_report_edit_repo, shop_repo
+from repositories import (
+    daily_report_status_repo,
+    shift_repo,
+    shift_report_edit_repo,
+    shop_repo,
+    weekly_report_status_repo,
+)
 
 _FIELD_LABELS = {
     "revenue": "Выручка",
@@ -210,3 +217,61 @@ async def was_final_report_sent(session: AsyncSession, report_date: date) -> boo
 async def mark_final_report_sent(session: AsyncSession, report_date: date) -> None:
     """Отметить, что итоговый отчёт за день отправлен."""
     await daily_report_status_repo.mark_final_sent(session, report_date)
+
+
+def _week_range(week_end_sunday: date) -> tuple[date, date]:
+    """Неделя Пн–Вс: (понедельник, воскресенье). week_end_sunday — дата воскресенья."""
+    start = week_end_sunday - timedelta(days=6)
+    return start, week_end_sunday
+
+
+async def get_weekly_analytics_text(
+    session: AsyncSession, week_end_sunday: date
+) -> str:
+    """
+    Текст недельной аналитики: общая выручка, топ-3 точки, топ-3 продавца.
+    week_end_sunday — воскресенье (конец недели).
+    """
+    start, end = _week_range(week_end_sunday)
+    shifts = await shift_repo.get_closed_shifts_in_date_range(session, start, end)
+    shifts_with_revenue = [s for s in shifts if s.report is not None]
+    total_revenue = sum(s.report.revenue for s in shifts_with_revenue)
+
+    by_shop: dict[int, float] = defaultdict(float)
+    shop_names: dict[int, str] = {}
+    by_seller: dict[int, float] = defaultdict(float)
+    seller_names: dict[int, str] = {}
+    for s in shifts_with_revenue:
+        by_shop[s.shop_id] += s.report.revenue
+        if s.shop:
+            shop_names[s.shop_id] = s.shop.address
+        by_seller[s.seller_id] += s.report.revenue
+        if s.seller:
+            seller_names[s.seller_id] = s.seller.full_name
+
+    top_shops = sorted(by_shop.items(), key=lambda x: -x[1])[:3]
+    top_sellers = sorted(by_seller.items(), key=lambda x: -x[1])[:3]
+
+    lines = [
+        f"📊 Недельная аналитика (Пн {start.strftime('%d.%m')} – Вс {end.strftime('%d.%m.%Y')})\n",
+        f"💰 Общая выручка за неделю: {total_revenue:,.0f} ₽\n",
+        "🏆 Топ-3 точки по выручке:",
+    ]
+    for i, (shop_id, rev) in enumerate(top_shops, 1):
+        name = shop_names.get(shop_id, f"Точка {shop_id}")
+        lines.append(f"  {i}. {name} — {rev:,.0f} ₽")
+    lines.append("\n👤 Топ-3 продавца по выручке:")
+    for i, (seller_id, rev) in enumerate(top_sellers, 1):
+        name = seller_names.get(seller_id, f"Продавец {seller_id}")
+        lines.append(f"  {i}. {name} — {rev:,.0f} ₽")
+    return "\n".join(lines)
+
+
+async def was_weekly_report_sent(session: AsyncSession, week_end_date: date) -> bool:
+    """Была ли уже отправлена недельная аналитика за эту неделю (дата воскресенья)."""
+    return await weekly_report_status_repo.was_weekly_report_sent(session, week_end_date)
+
+
+async def mark_weekly_report_sent(session: AsyncSession, week_end_date: date) -> None:
+    """Отметить, что недельная аналитика за неделю отправлена."""
+    await weekly_report_status_repo.mark_weekly_report_sent(session, week_end_date)

@@ -9,6 +9,7 @@ from core.models.shift_report import ShiftReport
 from core.models.shift_report_edit import ShiftReportEdit
 from core.models.admin import Admin
 from core.models.daily_report_status import DailyReportStatus
+from core.models.weekly_report_status import WeeklyReportStatus
 
 __all__ = [
     "Base",
@@ -19,4 +20,5 @@ __all__ = [
     "ShiftReportEdit",
     "Admin",
     "DailyReportStatus",
+    "WeeklyReportStatus",
 ]

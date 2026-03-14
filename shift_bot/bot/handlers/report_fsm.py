@@ -368,6 +368,20 @@ async def report_confirm(callback: CallbackQuery, state: FSMContext, session, se
                     logger.exception("Send final report to admin %s: %s", aid, e)
             await report_service.mark_final_report_sent(session, today)
 
+            # Воскресенье: отправить недельную аналитику один раз за неделю
+            if today.weekday() == 6:  # 6 = воскресенье
+                if not await report_service.was_weekly_report_sent(session, today):
+                    weekly_text = await report_service.get_weekly_analytics_text(session, today)
+                    for aid in admin_ids:
+                        try:
+                            await callback.bot.send_message(
+                                aid,
+                                "📬 Недельная аналитика (все точки закрыты в воскресенье):\n\n" + weekly_text,
+                            )
+                        except Exception as e:
+                            logger.exception("Send weekly report to admin %s: %s", aid, e)
+                    await report_service.mark_weekly_report_sent(session, today)
+
 
 @router.callback_query(ReportFSM.editing, F.data == "report_cancel")
 async def report_edit_cancel(callback: CallbackQuery, state: FSMContext, **kwargs):
