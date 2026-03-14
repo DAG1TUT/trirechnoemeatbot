@@ -75,8 +75,14 @@ async def get_edit_history_text(session: AsyncSession, shift_report_id: int) -> 
     return "\n".join(lines)
 
 
-def _format_shift_report(shift: Shift) -> str:
-    """Форматирование одной смены для отчёта."""
+# Порог: если выручка точки в этот день меньше 50% от средней за предыдущие дни — помечаем
+LOW_REVENUE_RATIO = 0.5
+# За сколько дней считаем среднюю выручку по точке (до даты отчёта)
+AVG_REVENUE_DAYS = 14
+
+
+def _format_shift_report(shift: Shift, low_revenue_warning: bool = False) -> str:
+    """Форматирование одной смены для отчёта. low_revenue_warning — пометка «подозрительно низкая выручка»."""
     seller_name = shift.seller.full_name
     address = shift.shop.address
     if shift.report:
@@ -89,7 +95,7 @@ def _format_shift_report(shift: Shift) -> str:
     else:
         revenue = cash = stock = expenses = 0.0
         comment = "—"
-    return (
+    block = (
         f"📍 {address}\n"
         f"👤 {seller_name}\n"
         f"💰 Выручка: {revenue:,.2f}\n"
@@ -98,6 +104,9 @@ def _format_shift_report(shift: Shift) -> str:
         f"📉 Расходы/списания: {expenses:,.2f}\n"
         f"💬 Комментарий: {comment}\n"
     )
+    if low_revenue_warning:
+        block += "⚠️ Подозрительно низкая выручка (ниже обычной по этой точке)\n"
+    return block
 
 
 def build_daily_report_text(shifts: list[Shift], report_date: date) -> str:
@@ -164,7 +173,14 @@ async def get_daily_report_text(
         total_revenue = total_cash = total_stock = total_expenses = 0.0
         lines = [f"📅 Итоговый отчёт за {report_date.strftime('%d.%m.%Y')}\n"]
         for shift in shifts:
-            lines.append(_format_shift_report(shift))
+            low_revenue = False
+            if shift.report and shift.shop_id:
+                avg = await shift_repo.get_shop_avg_revenue_before(
+                    session, shift.shop_id, report_date, days=AVG_REVENUE_DAYS
+                )
+                if avg is not None and avg > 0 and shift.report.revenue < avg * LOW_REVENUE_RATIO:
+                    low_revenue = True
+            lines.append(_format_shift_report(shift, low_revenue_warning=low_revenue))
             if shift.report:
                 r = shift.report
                 total_revenue += r.revenue

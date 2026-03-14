@@ -3,13 +3,14 @@
 """
 from __future__ import annotations
 
-from datetime import date, datetime, time
+from datetime import date, datetime, timedelta, time
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from core.models.shift import Shift
+from core.models.shift_report import ShiftReport
 
 
 async def get_open_shift_by_seller_id(session: AsyncSession, seller_id: int) -> Shift | None:
@@ -126,6 +127,37 @@ async def get_closed_shifts_by_shop(
         .order_by(Shift.shift_date.desc(), Shift.close_time.desc())
     )
     return list(result.scalars().all())
+
+
+async def get_shop_avg_revenue_before(
+    session: AsyncSession,
+    shop_id: int,
+    before_date: date,
+    days: int = 14,
+) -> float | None:
+    """
+    Средняя выручка по точке за закрытые смены в период [before_date - days, before_date).
+    Нужна для сравнения: если сегодняшняя выручка сильно ниже — пометка в отчёте.
+    """
+    start = before_date - timedelta(days=days)
+    result = await session.execute(
+        select(func.avg(ShiftReport.revenue))
+        .select_from(Shift)
+        .join(ShiftReport, Shift.id == ShiftReport.shift_id)
+        .where(
+            Shift.shop_id == shop_id,
+            Shift.status == "closed",
+            Shift.shift_date >= start,
+            Shift.shift_date < before_date,
+        )
+    )
+    scalar = result.scalar_one_or_none()
+    if scalar is None:
+        return None
+    try:
+        return float(scalar)
+    except (TypeError, ValueError):
+        return None
 
 
 async def get_closed_shift_by_seller_and_date(
