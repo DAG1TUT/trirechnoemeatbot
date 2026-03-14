@@ -10,7 +10,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from bot.keyboards.common import kb_cancel
+from bot.keyboards.common import kb_cancel, kb_cancel_back
 from bot.keyboards.seller import kb_confirm_close_shift, kb_edit_report_field
 from bot.states.report import ReportFSM
 from bot.store import OPEN_SHIFT_BY_TELEGRAM
@@ -53,7 +53,7 @@ async def step_revenue(message: Message, state: FSMContext, session, **kwargs):
         return
     await state.update_data(revenue=val)
     await state.set_state(ReportFSM.cash_balance)
-    await message.answer("Введите остаток наличных (число):", reply_markup=kb_cancel())
+    await message.answer("Введите остаток наличных (число):", reply_markup=kb_cancel_back())
 
 
 @router.message(ReportFSM.cash_balance, F.text)
@@ -64,7 +64,7 @@ async def step_cash_balance(message: Message, state: FSMContext, session, **kwar
         return
     await state.update_data(cash_balance=val)
     await state.set_state(ReportFSM.stock_balance)
-    await message.answer("Введите остаток товара (число или количество):", reply_markup=kb_cancel())
+    await message.answer("Введите остаток товара (число или количество):", reply_markup=kb_cancel_back())
 
 
 @router.message(ReportFSM.stock_balance, F.text)
@@ -75,7 +75,7 @@ async def step_stock_balance(message: Message, state: FSMContext, session, **kwa
         return
     await state.update_data(stock_balance=val)
     await state.set_state(ReportFSM.expenses)
-    await message.answer("Введите расходы / списания (число):", reply_markup=kb_cancel())
+    await message.answer("Введите расходы / списания (число):", reply_markup=kb_cancel_back())
 
 
 @router.message(ReportFSM.expenses, F.text)
@@ -86,7 +86,7 @@ async def step_expenses(message: Message, state: FSMContext, session, **kwargs):
         return
     await state.update_data(expenses=val)
     await state.set_state(ReportFSM.comment)
-    await message.answer("Введите комментарий (можно кратко или «—»):", reply_markup=kb_cancel())
+    await message.answer("Введите комментарий (можно кратко или «—»):", reply_markup=kb_cancel_back())
 
 
 @router.message(ReportFSM.comment, F.text)
@@ -95,6 +95,32 @@ async def step_comment(message: Message, state: FSMContext, session, **kwargs):
     await state.set_state(ReportFSM.confirm)
     data = await state.get_data()
     await message.answer(_format_summary(data), reply_markup=kb_confirm_close_shift())
+
+
+# Возврат на предыдущий шаг ввода отчёта: (текущее состояние, куда перейти, текст, клавиатура)
+_BACK_STEPS = [
+    (ReportFSM.cash_balance, ReportFSM.revenue, "Введите выручку за день (число):", kb_cancel),
+    (ReportFSM.stock_balance, ReportFSM.cash_balance, "Введите остаток наличных (число):", kb_cancel_back),
+    (ReportFSM.expenses, ReportFSM.stock_balance, "Введите остаток товара (число или количество):", kb_cancel_back),
+    (ReportFSM.comment, ReportFSM.expenses, "Введите расходы / списания (число):", kb_cancel_back),
+]
+
+
+@router.callback_query(F.data == "report_step_back")
+async def report_step_back(callback: CallbackQuery, state: FSMContext, **kwargs):
+    """Кнопка «Назад» — вернуться к предыдущему полю отчёта."""
+    current = await state.get_state()
+    if not current:
+        await callback.answer()
+        return
+    for from_state, to_state, prompt, kb in _BACK_STEPS:
+        if from_state.state == current:
+            await state.set_state(to_state)
+            await callback.answer("Назад")
+            await callback.message.edit_reply_markup(reply_markup=None)
+            await callback.message.answer(prompt, reply_markup=kb())
+            return
+    await callback.answer()
 
 
 @router.callback_query(ReportFSM.confirm, F.data == "report_edit")
