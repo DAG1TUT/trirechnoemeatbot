@@ -8,8 +8,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Токен бота (обязателен для run.py, для scripts.seed можно не задавать)
-BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
+# Токен бота: BOT_TOKEN в .env локально, TELEGRAM_BOT_TOKEN на Railway
+BOT_TOKEN: str = (
+    os.getenv("BOT_TOKEN", "").strip()
+    or os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+)
 
 # База данных (SQLite по умолчанию, легко заменить на PostgreSQL)
 DATABASE_URL: str = os.getenv(

@@ -4,6 +4,7 @@
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional
 
 DB_PATH = Path(__file__).parent / "expenses.db"
 
@@ -30,7 +31,7 @@ def init_db():
     conn.close()
 
 
-def add_expense(user_id: int, amount: float, description: str, category: str, created_at: str | None = None):
+def add_expense(user_id: int, amount: float, description: str, category: str, created_at: Optional[str] = None):
     conn = get_connection()
     if created_at is None:
         created_at = datetime.now().isoformat()

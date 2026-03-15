@@ -684,9 +684,14 @@ async def handle_expense(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def main():
-    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    # Токен из .env (BOT_TOKEN) или из окружения (TELEGRAM_BOT_TOKEN на Railway)
+    try:
+        from config import BOT_TOKEN as _cfg_token
+        token = (_cfg_token or "").strip() or os.environ.get("TELEGRAM_BOT_TOKEN")
+    except Exception:
+        token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
-        print("Задайте переменную окружения TELEGRAM_BOT_TOKEN.")
+        print("Задайте BOT_TOKEN в файле .env или переменную TELEGRAM_BOT_TOKEN.")
         return
     db.init_db()
     # Проверка Google Sheets при старте
