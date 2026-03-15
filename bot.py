@@ -10,6 +10,7 @@ import tempfile
 from datetime import datetime
 from typing import Optional, Tuple
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+from telegram.error import Conflict
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 from telegram.request import HTTPXRequest
 
@@ -694,6 +695,8 @@ def main():
         print("Задайте BOT_TOKEN в файле .env или переменную TELEGRAM_BOT_TOKEN.")
         return
     db.init_db()
+    # Если бот уже запущен на Railway — не запускай здесь, иначе будет Conflict
+    print("Подсказка: один экземпляр бота. Если он уже на Railway — не запускай локально.", flush=True)
     # Проверка Google Sheets при старте
     try:
         from google_sheets import _get_sheet
@@ -718,7 +721,15 @@ def main():
     app.add_handler(MessageHandler(filters.VOICE, handle_voice))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_expense))
     print("Бот запущен.")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    try:
+        app.run_polling(allowed_updates=Update.ALL_TYPES)
+    except Conflict:
+        print(
+            "\n⚠️ Конфликт: бот уже запущен в другом месте (Railway или второй терминал).\n"
+            "Остановите локальный процесс (Ctrl+C) или выключите деплой на Railway — должен работать только один экземпляр.",
+            flush=True,
+        )
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
