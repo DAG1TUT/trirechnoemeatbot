@@ -1,1 +1,1 @@
-worker: cd shift_bot && python run.py
+worker: python bot.py
