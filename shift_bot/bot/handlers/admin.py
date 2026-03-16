@@ -11,11 +11,18 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from bot.keyboards import kb_admin_main
-from bot.keyboards.admin import kb_seller_rating, kb_shop_rating
+from bot.keyboards.admin import (
+    kb_seller_rating,
+    kb_shop_rating,
+    kb_delete_scope,
+    kb_delete_choose_shop,
+    kb_delete_choose_seller,
+    kb_delete_confirm,
+)
 from bot.store import LOGGED_OUT_ADMIN_IDS
 from services import shift_service, report_service, reminder_service
 from services import rating_service
-from repositories import admin_repo
+from repositories import admin_repo, shift_repo, shop_repo, seller_repo
 from config import ADMIN_IDS
 
 router = Router()
@@ -283,3 +290,150 @@ async def admin_archive_period(message: Message, state: FSMContext, session, rol
         for i in range(0, len(text), max_len):
             chunk = text[i : i + max_len]
             await message.answer(chunk)
+
+
+# ----- Удаление данных за дату (по дате / по точке / по продавцу) -----
+
+
+@router.message(F.text == "🗑 Удалить данные за дату")
+async def admin_delete_by_date_start(message: Message, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        return
+    await state.set_state(AdminFSM.waiting_delete_date)
+    await message.answer("Введите дату в формате ДД.ММ.ГГГГ (смены и отчёты за эту дату можно будет удалить):")
+
+
+@router.message(AdminFSM.waiting_delete_date, F.text)
+async def admin_delete_date_entered(message: Message, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        return
+    d = _parse_date(message.text)
+    if not d:
+        await message.answer("Неверный формат даты. Используйте ДД.ММ.ГГГГ.")
+        return
+    await state.update_data(delete_date=d.isoformat())
+    await state.set_state(None)
+    shifts = await shift_repo.get_shifts_by_date(session, d)
+    if not shifts:
+        await message.answer(f"За {d.strftime('%d.%m.%Y')} нет смен. Нечего удалять.")
+        return
+    await message.answer(
+        f"За {d.strftime('%d.%m.%Y')} найдено смен: {len(shifts)}.\nЧто удалить?",
+        reply_markup=kb_delete_scope(),
+    )
+
+
+@router.callback_query(F.data == "delete_scope_all")
+async def admin_delete_scope_all(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    data = await state.get_data()
+    date_str = data.get("delete_date")
+    if not date_str:
+        await callback.answer("Сессия сброшена. Начните заново.", show_alert=True)
+        await state.clear()
+        return
+    from datetime import date as date_type
+    d = date_type.fromisoformat(date_str)
+    shifts = await shift_repo.get_shifts_by_date(session, d)
+    await state.update_data(delete_scope="all", delete_shop_id=None, delete_seller_id=None)
+    await callback.message.edit_text(
+        f"Удалить все смены за {d.strftime('%d.%m.%Y')}? (всего {len(shifts)} смен)",
+        reply_markup=kb_delete_confirm(),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "delete_scope_shop")
+async def admin_delete_scope_shop(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    shops = await shop_repo.get_all_active_shops(session)
+    if not shops:
+        await callback.answer("Нет точек.", show_alert=True)
+        return
+    await callback.message.edit_text("Выберите точку (удалятся смены за выбранную дату только по этой точке):", reply_markup=kb_delete_choose_shop(shops))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "delete_scope_seller")
+async def admin_delete_scope_seller(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    sellers = await seller_repo.get_all_active_sellers(session)
+    if not sellers:
+        await callback.answer("Нет продавцов.", show_alert=True)
+        return
+    await callback.message.edit_text("Выберите продавца (удалятся смены за выбранную дату только по этому продавцу):", reply_markup=kb_delete_choose_seller(sellers))
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("delete_shop_"))
+@router.callback_query(F.data.startswith("delete_seller_"))
+async def admin_delete_scope_chosen(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    from datetime import date as date_type
+    data = await state.get_data()
+    date_str = data.get("delete_date")
+    if not date_str:
+        await callback.answer("Сессия сброшена.", show_alert=True)
+        await state.clear()
+        return
+    d = date_type.fromisoformat(date_str)
+    if callback.data.startswith("delete_shop_"):
+        shop_id = int(callback.data.replace("delete_shop_", ""))
+        shifts = await shift_repo.get_shifts_by_date(session, d, shop_id=shop_id)
+        shop = await shop_repo.get_shop_by_id(session, shop_id)
+        name = shop.address if shop else f"Точка {shop_id}"
+        await state.update_data(delete_scope="shop", delete_shop_id=shop_id, delete_seller_id=None)
+        await callback.message.edit_text(
+            f"Удалить смены за {d.strftime('%d.%m.%Y')} по точке «{name}»? (смен: {len(shifts)})",
+            reply_markup=kb_delete_confirm(),
+        )
+    else:
+        seller_id = int(callback.data.replace("delete_seller_", ""))
+        shifts = await shift_repo.get_shifts_by_date(session, d, seller_id=seller_id)
+        from repositories import seller_repo as sr
+        sellers = await sr.get_all_active_sellers(session)
+        seller = next((s for s in sellers if s.id == seller_id), None)
+        name = seller.full_name if seller else f"ID{seller_id}"
+        await state.update_data(delete_scope="seller", delete_shop_id=None, delete_seller_id=seller_id)
+        await callback.message.edit_text(
+            f"Удалить смены за {d.strftime('%d.%m.%Y')} по продавцу «{name}»? (смен: {len(shifts)})",
+            reply_markup=kb_delete_confirm(),
+        )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "delete_confirm_yes")
+async def admin_delete_confirm_yes(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    from datetime import date as date_type
+    data = await state.get_data()
+    date_str = data.get("delete_date")
+    if not date_str:
+        await callback.answer("Сессия сброшена.", show_alert=True)
+        await state.clear()
+        return
+    d = date_type.fromisoformat(date_str)
+    scope = data.get("delete_scope")
+    shop_id = data.get("delete_shop_id") if scope == "shop" else None
+    seller_id = data.get("delete_seller_id") if scope == "seller" else None
+    n = await shift_repo.delete_shifts_for_date(session, d, shop_id=shop_id, seller_id=seller_id)
+    await state.clear()
+    await callback.message.edit_text(f"✅ Удалено смен: {n}.")
+    await callback.answer("Готово", show_alert=True)
+
+
+@router.callback_query(F.data == "delete_cancel")
+async def admin_delete_cancel(callback: CallbackQuery, state: FSMContext, **kwargs):
+    await state.clear()
+    await callback.message.edit_text("Удаление отменено.")
+    await callback.answer()

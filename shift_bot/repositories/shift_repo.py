@@ -5,12 +5,14 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, time
 
-from sqlalchemy import select, func
+from sqlalchemy import delete, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from core.models.shift import Shift
 from core.models.shift_report import ShiftReport
+from core.models.shift_report_edit import ShiftReportEdit
+from core.models.daily_report_status import DailyReportStatus
 
 
 async def get_open_shift_by_seller_id(session: AsyncSession, seller_id: int) -> Shift | None:
@@ -235,3 +237,50 @@ async def close_shift(session: AsyncSession, shift_id: int, close_time: time | N
     await session.flush()
     await session.refresh(shift)
     return shift
+
+
+async def get_shifts_by_date(
+    session: AsyncSession,
+    shift_date: date,
+    shop_id: int | None = None,
+    seller_id: int | None = None,
+) -> list[Shift]:
+    """Все смены за дату (открытые и закрытые), опционально по точке или продавцу."""
+    q = select(Shift).where(Shift.shift_date == shift_date)
+    if shop_id is not None:
+        q = q.where(Shift.shop_id == shop_id)
+    if seller_id is not None:
+        q = q.where(Shift.seller_id == seller_id)
+    q = q.options(
+        selectinload(Shift.shop),
+        selectinload(Shift.seller),
+        selectinload(Shift.report),
+    )
+    result = await session.execute(q)
+    return list(result.scalars().all())
+
+
+async def delete_shifts_for_date(
+    session: AsyncSession,
+    shift_date: date,
+    shop_id: int | None = None,
+    seller_id: int | None = None,
+) -> int:
+    """
+    Удалить все смены за дату (и их отчёты, историю правок).
+    Опционально только по точке (shop_id) или по продавцу (seller_id).
+    Возвращает количество удалённых смен.
+    """
+    shifts = await get_shifts_by_date(session, shift_date, shop_id=shop_id, seller_id=seller_id)
+    if not shifts:
+        return 0
+    shift_ids = [s.id for s in shifts]
+    report_ids = [s.report.id for s in shifts if s.report is not None]
+    if report_ids:
+        await session.execute(delete(ShiftReportEdit).where(ShiftReportEdit.shift_report_id.in_(report_ids)))
+    await session.execute(delete(ShiftReport).where(ShiftReport.shift_id.in_(shift_ids)))
+    await session.execute(delete(Shift).where(Shift.id.in_(shift_ids)))
+    if shop_id is None and seller_id is None:
+        await session.execute(delete(DailyReportStatus).where(DailyReportStatus.report_date == shift_date))
+    await session.flush()
+    return len(shifts)
