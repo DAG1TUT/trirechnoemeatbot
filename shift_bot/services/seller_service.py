@@ -22,3 +22,8 @@ async def get_sellers_for_binding(session: AsyncSession) -> list[Seller]:
 async def bind_seller(session: AsyncSession, seller_id: int, telegram_id: int) -> Seller | None:
     """Привязать telegram_id к продавцу. Возвращает продавца или None."""
     return await seller_repo.bind_telegram_to_seller(session, seller_id, telegram_id)
+
+
+async def unbind_seller(session: AsyncSession, telegram_id: int) -> bool:
+    """Отвязать аккаунт от продавца (выйти). Возвращает True, если привязка была снята."""
+    return await seller_repo.unbind_seller_by_telegram_id(session, telegram_id)

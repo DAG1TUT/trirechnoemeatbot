@@ -10,7 +10,7 @@ from aiogram.fsm.context import FSMContext
 
 from bot.keyboards import kb_seller_main, kb_admin_main, kb_choose_seller
 from bot.keyboards.common import kb_cancel
-from bot.store import LOGGED_OUT_ADMIN_IDS
+from bot.store import LOGGED_OUT_ADMIN_IDS, OPEN_SHIFT_BY_TELEGRAM
 from bot.states.admin import AdminLoginFSM
 from bot.middlewares.auth import get_session, get_seller, get_role
 from config import ADMIN_PASSWORD
@@ -104,6 +104,28 @@ async def admin_login_cancel(callback: CallbackQuery, state: FSMContext, **kwarg
     await state.clear()
     await callback.answer("Отменено")
     await callback.message.edit_text("Вход отменён. Нажмите /start для выбора роли.")
+
+
+@router.message(F.text == "🚪 Выйти / Сменить привязку")
+async def seller_logout(message: Message, session, role, **kwargs):
+    """Продавец выходит из аккаунта и возвращается к выбору фамилии."""
+    if role != "seller":
+        return
+    telegram_id = message.from_user.id
+    ok = await seller_service.unbind_seller(session, telegram_id)
+    OPEN_SHIFT_BY_TELEGRAM.pop(telegram_id, None)
+    if not ok:
+        await message.answer("Не удалось выйти. Попробуйте /start.")
+        return
+    sellers = await seller_service.get_sellers_for_binding(session)
+    to_show = [s for s in sellers if s.telegram_id is None]
+    if not to_show:
+        await message.answer("Список продавцов для привязки пуст. Обратитесь к руководителю.")
+        return
+    await message.answer(
+        "Вы вышли из аккаунта. Выберите себя из списка или войдите как руководитель:",
+        reply_markup=kb_choose_seller(to_show),
+    )
 
 
 @router.callback_query(F.data.startswith("bind_seller_"))

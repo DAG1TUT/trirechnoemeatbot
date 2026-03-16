@@ -41,3 +41,14 @@ async def bind_telegram_to_seller(session: AsyncSession, seller_id: int, telegra
     await session.flush()
     await session.refresh(seller)
     return seller
+
+
+async def unbind_seller_by_telegram_id(session: AsyncSession, telegram_id: int) -> bool:
+    """Отвязать telegram_id от продавца (выйти из аккаунта). Возвращает True, если привязка была и снята."""
+    seller = await get_seller_by_telegram_id(session, telegram_id)
+    if not seller:
+        return False
+    seller.telegram_id = None
+    session.add(seller)
+    await session.flush()
+    return True

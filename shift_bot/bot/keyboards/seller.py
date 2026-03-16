@@ -8,13 +8,14 @@ from core.models.shop import Shop
 
 
 def kb_seller_main() -> ReplyKeyboardMarkup:
-    """Главное меню продавца: Открыть смену, Моя смена, Закрыть смену, Редактировать отчёт."""
+    """Главное меню продавца: Открыть смену, Моя смена, Закрыть смену, Редактировать отчёт, Выйти."""
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="📂 Открыть смену")],
             [KeyboardButton(text="📋 Моя смена")],
             [KeyboardButton(text="✅ Закрыть смену")],
             [KeyboardButton(text="✏️ Редактировать отчёт")],
+            [KeyboardButton(text="🚪 Выйти / Сменить привязку")],
         ],
         resize_keyboard=True,
     )
