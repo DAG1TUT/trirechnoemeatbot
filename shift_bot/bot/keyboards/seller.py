@@ -51,16 +51,27 @@ def kb_confirm_close_shift() -> InlineKeyboardMarkup:
     ])
 
 
-def kb_edit_report_field() -> InlineKeyboardMarkup:
-    """Выбор поля отчёта для изменения."""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💰 Выручка", callback_data="report_edit_revenue")],
+def kb_edit_report_field(is_grocery: bool = False) -> InlineKeyboardMarkup:
+    """Выбор поля отчёта для изменения. is_grocery — показывать выручка по мясу/магазину."""
+    rows = []
+    rows.append([InlineKeyboardButton(text="📥 Приход", callback_data="report_edit_receipts")])
+    if is_grocery:
+        rows.append([InlineKeyboardButton(text="🥩 Выручка по мясу", callback_data="report_edit_revenue_meat")])
+        rows.append([InlineKeyboardButton(text="🏪 Выручка по магазину", callback_data="report_edit_revenue_store")])
+        rows.append([InlineKeyboardButton(text="💰 Выручка итого", callback_data="report_edit_revenue")])
+    else:
+        rows.append([InlineKeyboardButton(text="💰 Выручка", callback_data="report_edit_revenue")])
+    rows.extend([
+        [InlineKeyboardButton(text="💳 Терминал", callback_data="report_edit_terminal_revenue")],
+        [InlineKeyboardButton(text="💵 Наличные от выручки", callback_data="report_edit_cash_revenue")],
         [InlineKeyboardButton(text="💵 Остаток наличных", callback_data="report_edit_cash")],
         [InlineKeyboardButton(text="📦 Остаток товара", callback_data="report_edit_stock")],
         [InlineKeyboardButton(text="📉 Расходы", callback_data="report_edit_expenses")],
+        [InlineKeyboardButton(text="📤 Сдаю", callback_data="report_edit_surrender_amount")],
         [InlineKeyboardButton(text="💬 Комментарий", callback_data="report_edit_comment")],
         [InlineKeyboardButton(text="◀️ Назад", callback_data="report_edit_back")],
     ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def kb_after_shift_opened(shift_id: int) -> InlineKeyboardMarkup:
@@ -73,16 +84,27 @@ def kb_after_shift_opened(shift_id: int) -> InlineKeyboardMarkup:
     ])
 
 
-def kb_edit_report_after_submit() -> InlineKeyboardMarkup:
-    """Выбор поля при редактировании уже отправленного отчёта + Готово."""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💰 Выручка", callback_data="edit_report_field_revenue")],
+def kb_edit_report_after_submit(is_grocery: bool = False) -> InlineKeyboardMarkup:
+    """Выбор поля при редактировании уже отправленного отчёта + Готово. is_grocery — показывать выручка по мясу/магазину."""
+    rows = []
+    rows.append([InlineKeyboardButton(text="📥 Приход", callback_data="edit_report_field_receipts")])
+    if is_grocery:
+        rows.append([InlineKeyboardButton(text="🥩 Выручка по мясу", callback_data="edit_report_field_revenue_meat")])
+        rows.append([InlineKeyboardButton(text="🏪 Выручка по магазину", callback_data="edit_report_field_revenue_store")])
+        rows.append([InlineKeyboardButton(text="💰 Выручка итого", callback_data="edit_report_field_revenue")])
+    else:
+        rows.append([InlineKeyboardButton(text="💰 Выручка", callback_data="edit_report_field_revenue")])
+    rows.extend([
+        [InlineKeyboardButton(text="💳 Терминал", callback_data="edit_report_field_terminal_revenue")],
+        [InlineKeyboardButton(text="💵 Наличные от выручки", callback_data="edit_report_field_cash_revenue")],
         [InlineKeyboardButton(text="💵 Остаток наличных", callback_data="edit_report_field_cash")],
         [InlineKeyboardButton(text="📦 Остаток товара", callback_data="edit_report_field_stock")],
         [InlineKeyboardButton(text="📉 Расходы", callback_data="edit_report_field_expenses")],
+        [InlineKeyboardButton(text="📤 Сдаю", callback_data="edit_report_field_surrender_amount")],
         [InlineKeyboardButton(text="💬 Комментарий", callback_data="edit_report_field_comment")],
         [InlineKeyboardButton(text="✅ Готово", callback_data="edit_report_done")],
     ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def kb_edit_report_offer(shift_id: int) -> InlineKeyboardMarkup:

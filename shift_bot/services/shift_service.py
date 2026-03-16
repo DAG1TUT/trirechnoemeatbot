@@ -75,8 +75,14 @@ async def save_shift_report(
     stock_balance: float,
     expenses: float,
     comment: str = "",
+    revenue_meat: float | None = None,
+    revenue_store: float | None = None,
+    terminal_revenue: float | None = None,
+    cash_revenue: float | None = None,
+    receipts: float = 0.0,
+    surrender_amount: float = 0.0,
 ) -> bool:
-    """Сохранить отчёт по смене и закрыть смену. Проверяет, что смена своя и открыта."""
+    """Сохранить отчёт по смене и закрыть смену."""
     shift = await shift_repo.get_shift_by_id(session, shift_id)
     if not shift or shift.seller_id != seller_id or shift.status != "open":
         return False
@@ -88,6 +94,12 @@ async def save_shift_report(
         stock_balance=stock_balance,
         expenses=expenses,
         comment=comment,
+        revenue_meat=revenue_meat,
+        revenue_store=revenue_store,
+        terminal_revenue=terminal_revenue,
+        cash_revenue=cash_revenue,
+        receipts=receipts,
+        surrender_amount=surrender_amount,
     )
     await shift_repo.close_shift(session, shift_id)
     return True
@@ -125,6 +137,12 @@ async def update_shift_report_with_log(
     full_name: str,
     *,
     revenue: float | None = None,
+    revenue_meat: float | None = None,
+    revenue_store: float | None = None,
+    terminal_revenue: float | None = None,
+    cash_revenue: float | None = None,
+    receipts: float | None = None,
+    surrender_amount: float | None = None,
     cash_balance: float | None = None,
     stock_balance: float | None = None,
     expenses: float | None = None,
@@ -140,6 +158,18 @@ async def update_shift_report_with_log(
     changes = {}
     if revenue is not None and report.revenue != revenue:
         changes["revenue"] = {"old": report.revenue, "new": revenue}
+    if revenue_meat is not None and report.revenue_meat != revenue_meat:
+        changes["revenue_meat"] = {"old": report.revenue_meat, "new": revenue_meat}
+    if revenue_store is not None and report.revenue_store != revenue_store:
+        changes["revenue_store"] = {"old": report.revenue_store, "new": revenue_store}
+    if terminal_revenue is not None and getattr(report, "terminal_revenue", None) != terminal_revenue:
+        changes["terminal_revenue"] = {"old": getattr(report, "terminal_revenue", None), "new": terminal_revenue}
+    if cash_revenue is not None and getattr(report, "cash_revenue", None) != cash_revenue:
+        changes["cash_revenue"] = {"old": getattr(report, "cash_revenue", None), "new": cash_revenue}
+    if receipts is not None and getattr(report, "receipts", 0) != receipts:
+        changes["receipts"] = {"old": getattr(report, "receipts", 0), "new": receipts}
+    if surrender_amount is not None and getattr(report, "surrender_amount", 0) != surrender_amount:
+        changes["surrender_amount"] = {"old": getattr(report, "surrender_amount", 0), "new": surrender_amount}
     if cash_balance is not None and report.cash_balance != cash_balance:
         changes["cash_balance"] = {"old": report.cash_balance, "new": cash_balance}
     if stock_balance is not None and report.stock_balance != stock_balance:
@@ -152,6 +182,12 @@ async def update_shift_report_with_log(
         session,
         report_id,
         revenue=revenue,
+        revenue_meat=revenue_meat,
+        revenue_store=revenue_store,
+        terminal_revenue=terminal_revenue,
+        cash_revenue=cash_revenue,
+        receipts=receipts,
+        surrender_amount=surrender_amount,
         cash_balance=cash_balance,
         stock_balance=stock_balance,
         expenses=expenses,

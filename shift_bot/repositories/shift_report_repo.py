@@ -25,6 +25,12 @@ async def create_shift_report(
     stock_balance: float,
     expenses: float,
     comment: str = "",
+    revenue_meat: float | None = None,
+    revenue_store: float | None = None,
+    terminal_revenue: float | None = None,
+    cash_revenue: float | None = None,
+    receipts: float = 0.0,
+    surrender_amount: float = 0.0,
 ) -> ShiftReport:
     """Создать отчёт по смене."""
     report = ShiftReport(
@@ -34,6 +40,12 @@ async def create_shift_report(
         stock_balance=stock_balance,
         expenses=expenses,
         comment=comment or "",
+        revenue_meat=revenue_meat,
+        revenue_store=revenue_store,
+        terminal_revenue=terminal_revenue,
+        cash_revenue=cash_revenue,
+        receipts=receipts,
+        surrender_amount=surrender_amount,
     )
     session.add(report)
     await session.flush()
@@ -54,6 +66,12 @@ async def update_report(
     report_id: int,
     *,
     revenue: float | None = None,
+    revenue_meat: float | None = None,
+    revenue_store: float | None = None,
+    terminal_revenue: float | None = None,
+    cash_revenue: float | None = None,
+    receipts: float | None = None,
+    surrender_amount: float | None = None,
     cash_balance: float | None = None,
     stock_balance: float | None = None,
     expenses: float | None = None,
@@ -65,6 +83,18 @@ async def update_report(
         return None
     if revenue is not None:
         report.revenue = revenue
+    if revenue_meat is not None:
+        report.revenue_meat = revenue_meat
+    if revenue_store is not None:
+        report.revenue_store = revenue_store
+    if terminal_revenue is not None:
+        report.terminal_revenue = terminal_revenue
+    if cash_revenue is not None:
+        report.cash_revenue = cash_revenue
+    if receipts is not None:
+        report.receipts = receipts
+    if surrender_amount is not None:
+        report.surrender_amount = surrender_amount
     if cash_balance is not None:
         report.cash_balance = cash_balance
     if stock_balance is not None:

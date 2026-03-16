@@ -144,6 +144,14 @@ async def cb_my_shift(callback: CallbackQuery, session, seller, role, **kwargs):
     )
 
 
+# Продуктовые магазины: ввод выручки по мясу и по магазину отдельно
+GROCERY_SHOP_ADDRESSES = ("Казаки продуктовый", "Строитель продуктовый")
+
+
+def _is_grocery_shop(shift) -> bool:
+    return bool(shift.shop and shift.shop.address in GROCERY_SHOP_ADDRESSES)
+
+
 @router.callback_query(F.data.startswith("close_shift_"))
 async def cb_close_shift(callback: CallbackQuery, session, seller, role, state, **kwargs):
     """Кнопка «Закрыть смену» под сообщением — запуск FSM по shift_id из callback."""
@@ -156,11 +164,12 @@ async def cb_close_shift(callback: CallbackQuery, session, seller, role, state, 
         await callback.answer("Смена не найдена или уже закрыта.", show_alert=True)
         return
     from bot.states.report import ReportFSM
-    await state.update_data(shift_id=shift_id, seller_id=seller.id)
-    await state.set_state(ReportFSM.revenue)
+    is_grocery = _is_grocery_shop(shift)
+    await state.update_data(shift_id=shift_id, seller_id=seller.id, is_grocery_shop=is_grocery)
     await callback.answer()
+    await state.set_state(ReportFSM.receipts)
     await callback.message.answer(
-        "Введите выручку за день (число):",
+        "Введите приход (число):",
         reply_markup=kb_cancel(),
     )
 
@@ -205,21 +214,19 @@ async def close_shift_start(message: Message, session, seller, role, state, **kw
     cached = _get_cached_shift(telegram_id, seller.id)
     if cached:
         from bot.states.report import ReportFSM
-        await state.update_data(shift_id=cached["shift_id"], seller_id=seller.id)
-        await state.set_state(ReportFSM.revenue)
-        await message.answer(
-            "Введите выручку за день (число):",
-            reply_markup=kb_cancel(),
-        )
+        # Для кэша нет shop в контексте — запрашиваем смену для проверки продуктовой точки
+        current = await shift_service.get_current_shift(session, seller.id)
+        is_grocery = _is_grocery_shop(current) if current else False
+        await state.update_data(shift_id=cached["shift_id"], seller_id=seller.id, is_grocery_shop=is_grocery)
+        await state.set_state(ReportFSM.receipts)
+        await message.answer("Введите приход (число):", reply_markup=kb_cancel())
         return
     current = await shift_service.get_current_shift(session, seller.id)
     if not current:
         await message.answer("У вас нет открытой смены. Нечего закрывать.")
         return
     from bot.states.report import ReportFSM
-    await state.update_data(shift_id=current.id, seller_id=seller.id)
-    await state.set_state(ReportFSM.revenue)
-    await message.answer(
-        "Введите выручку за день (число):",
-        reply_markup=kb_cancel(),
-    )
+    is_grocery = _is_grocery_shop(current)
+    await state.update_data(shift_id=current.id, seller_id=seller.id, is_grocery_shop=is_grocery)
+    await state.set_state(ReportFSM.receipts)
+    await message.answer("Введите приход (число):", reply_markup=kb_cancel())

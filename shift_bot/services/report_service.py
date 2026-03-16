@@ -23,6 +23,12 @@ from repositories import (
 
 _FIELD_LABELS = {
     "revenue": "Выручка",
+    "revenue_meat": "Выручка по мясу",
+    "revenue_store": "Выручка по магазину",
+    "terminal_revenue": "Терминал",
+    "cash_revenue": "Наличные от выручки",
+    "receipts": "Приход",
+    "surrender_amount": "Сдаю",
     "cash_balance": "Остаток наличных",
     "stock_balance": "Остаток товара",
     "expenses": "Расходы",
@@ -60,15 +66,32 @@ def _format_one_edit(edit: ShiftReportEdit) -> str:
 
 def format_report_for_edit(report) -> str:
     """Текст текущих данных отчёта для экрана редактирования."""
-    return (
-        "Текущие данные отчёта:\n"
-        f"💰 Выручка: {report.revenue:,.2f}\n"
+    revenue_meat = getattr(report, "revenue_meat", None)
+    revenue_store = getattr(report, "revenue_store", None)
+    terminal_revenue = getattr(report, "terminal_revenue", None)
+    cash_revenue = getattr(report, "cash_revenue", None)
+    receipts = getattr(report, "receipts", 0) or 0
+    surrender_amount = getattr(report, "surrender_amount", 0) or 0
+    lines = ["Текущие данные отчёта:\n"]
+    lines.append(f"📥 Приход: {receipts:,.2f}\n")
+    if revenue_meat is not None or revenue_store is not None:
+        lines.append(f"🥩 Выручка по мясу: {(revenue_meat or 0):,.2f}\n")
+        lines.append(f"🏪 Выручка по магазину: {(revenue_store or 0):,.2f}\n")
+        lines.append(f"💰 Выручка итого: {report.revenue:,.2f}\n")
+    else:
+        lines.append(f"💰 Выручка: {report.revenue:,.2f}\n")
+    if terminal_revenue is not None or cash_revenue is not None:
+        lines.append(f"💳 Терминал: {(terminal_revenue or 0):,.2f}\n")
+        lines.append(f"💵 Наличные от выручки: {(cash_revenue or 0):,.2f}\n")
+    lines.append(
         f"💵 Остаток наличных: {report.cash_balance:,.2f}\n"
         f"📦 Остаток товара: {report.stock_balance:,.2f}\n"
         f"📉 Расходы: {report.expenses:,.2f}\n"
+        f"📤 Сдаю: {surrender_amount:,.2f}\n"
         f"💬 Комментарий: {report.comment or '—'}\n\n"
         "Что изменить?"
     )
+    return "".join(lines)
 
 
 async def get_edit_history_text(session: AsyncSession, shift_report_id: int) -> str:
@@ -99,16 +122,36 @@ def _format_shift_report(shift: Shift, low_revenue_warning: bool = False) -> str
         stock = r.stock_balance
         expenses = r.expenses
         comment = r.comment or "—"
+        revenue_meat = getattr(r, "revenue_meat", None)
+        revenue_store = getattr(r, "revenue_store", None)
+        terminal_revenue = getattr(r, "terminal_revenue", None)
+        cash_revenue = getattr(r, "cash_revenue", None)
+        receipts = getattr(r, "receipts", 0) or 0
+        surrender_amount = getattr(r, "surrender_amount", 0) or 0
     else:
         revenue = cash = stock = expenses = 0.0
         comment = "—"
+        revenue_meat = revenue_store = terminal_revenue = cash_revenue = None
+        receipts = surrender_amount = 0.0
     block = (
         f"📍 {address}\n"
         f"👤 {seller_name}\n"
-        f"💰 Выручка: {revenue:,.2f}\n"
+        f"📥 Приход: {receipts:,.2f}\n"
+    )
+    if revenue_meat is not None or revenue_store is not None:
+        block += f"🥩 Выручка по мясу: {(revenue_meat or 0):,.2f}\n"
+        block += f"🏪 Выручка по магазину: {(revenue_store or 0):,.2f}\n"
+        block += f"💰 Выручка итого: {revenue:,.2f}\n"
+    else:
+        block += f"💰 Выручка: {revenue:,.2f}\n"
+    if terminal_revenue is not None or cash_revenue is not None:
+        block += f"💳 Терминал: {(terminal_revenue or 0):,.2f}\n"
+        block += f"💵 Наличные от выручки: {(cash_revenue or 0):,.2f}\n"
+    block += (
         f"💵 Остаток наличных: {cash:,.2f}\n"
         f"📦 Остаток товара: {stock:,.2f}\n"
         f"📉 Расходы/списания: {expenses:,.2f}\n"
+        f"📤 Сдаю: {surrender_amount:,.2f}\n"
         f"💬 Комментарий: {comment}\n"
     )
     if low_revenue_warning:

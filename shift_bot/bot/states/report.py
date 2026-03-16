@@ -7,10 +7,16 @@ from aiogram.fsm.state import State, StatesGroup
 class ReportFSM(StatesGroup):
     """Состояния ввода полей отчёта по смене."""
 
+    receipts = State()       # приход
     revenue = State()
+    revenue_meat = State()   # для продуктовых: выручка по мясу
+    revenue_store = State()  # для продуктовых: выручка по магазину
+    terminal_revenue = State()  # терминал (карта)
+    cash_revenue = State()   # наличные от выручки
     cash_balance = State()
     stock_balance = State()
     expenses = State()
+    surrender_amount = State()  # сдаю
     comment = State()
     confirm = State()
     editing = State()  # ввод нового значения при нажатии «Изменить»

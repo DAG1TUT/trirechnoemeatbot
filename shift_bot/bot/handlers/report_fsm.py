@@ -25,31 +25,53 @@ from repositories import admin_repo, shift_repo, shift_report_repo, shop_repo
 router = Router()
 logger = logging.getLogger(__name__)
 
-# Пороги для переспроса «точно ли такое большое значение?» (по полям отчёта)
+# Пороги для переспроса «точно ли такое большое значение?»
 BIG_VALUE_THRESHOLDS = {
     "revenue": 200_000,
+    "revenue_meat": 200_000,
+    "revenue_store": 200_000,
+    "terminal_revenue": 200_000,
+    "cash_revenue": 200_000,
+    "receipts": 500_000,
     "cash_balance": 150_000,
     "stock_balance": 150_000,
     "expenses": 50_000,
+    "surrender_amount": 200_000,
 }
 # Куда переходить после поля (для основного потока)
 _NEXT_STATE_AFTER_FIELD = {
     "revenue": ReportFSM.cash_balance,
+    "revenue_meat": ReportFSM.revenue_store,
+    "revenue_store": ReportFSM.terminal_revenue,
+    "terminal_revenue": ReportFSM.cash_revenue,
+    "cash_revenue": ReportFSM.cash_balance,
     "cash_balance": ReportFSM.stock_balance,
     "stock_balance": ReportFSM.expenses,
-    "expenses": ReportFSM.comment,
+    "expenses": ReportFSM.surrender_amount,
+    "surrender_amount": ReportFSM.comment,
 }
 _PROMPT_AFTER_FIELD = {
     "revenue": "Введите остаток наличных (число):",
+    "revenue_meat": "Введите выручку по магазину (число):",
+    "revenue_store": "Введите выручку по терминалу (число):",
+    "terminal_revenue": "Введите выручку наличными (число):",
+    "cash_revenue": "Введите остаток наличных (число):",
     "cash_balance": "Введите остаток товара (число или количество):",
     "stock_balance": "Введите расходы / списания (число):",
-    "expenses": "Введите комментарий (можно кратко или «—»):",
+    "expenses": "Введите сдаю (сумма к сдаче, число):",
+    "surrender_amount": "Введите комментарий (можно кратко или «—»):",
 }
 _FIRST_PROMPT = {
     "revenue": "Введите выручку за день (число):",
+    "revenue_meat": "Введите выручку по мясу (число):",
+    "revenue_store": "Введите выручку по магазину (число):",
+    "terminal_revenue": "Введите выручку по терминалу (число):",
+    "cash_revenue": "Введите выручку наличными (число):",
+    "receipts": "Введите приход (число):",
     "cash_balance": "Введите остаток наличных (число):",
     "stock_balance": "Введите остаток товара (число или количество):",
     "expenses": "Введите расходы / списания (число):",
+    "surrender_amount": "Введите сдаю (число):",
 }
 
 
@@ -66,15 +88,26 @@ def _parse_float(text: str) -> float | None:
 
 def _format_summary(data: dict) -> str:
     """Текст итогового отчёта для подтверждения."""
-    return (
-        "Проверьте данные:\n"
-        f"💰 Выручка: {data['revenue']:,.2f}\n"
+    lines = ["Проверьте данные:\n"]
+    lines.append(f"📥 Приход: {(data.get('receipts') or 0):,.2f}\n")
+    if data.get("revenue_meat") is not None or data.get("revenue_store") is not None:
+        lines.append(f"🥩 Выручка по мясу: {(data.get('revenue_meat') or 0):,.2f}\n")
+        lines.append(f"🏪 Выручка по магазину: {(data.get('revenue_store') or 0):,.2f}\n")
+        lines.append(f"💰 Выручка итого: {data['revenue']:,.2f}\n")
+    else:
+        lines.append(f"💰 Выручка: {data['revenue']:,.2f}\n")
+    if data.get("terminal_revenue") is not None or data.get("cash_revenue") is not None:
+        lines.append(f"💳 Терминал: {(data.get('terminal_revenue') or 0):,.2f}\n")
+        lines.append(f"💵 Наличные от выручки: {(data.get('cash_revenue') or 0):,.2f}\n")
+    lines.append(
         f"💵 Остаток наличных: {data['cash_balance']:,.2f}\n"
         f"📦 Остаток товара: {data['stock_balance']:,.2f}\n"
         f"📉 Расходы: {data['expenses']:,.2f}\n"
+        f"📤 Сдаю: {(data.get('surrender_amount') or 0):,.2f}\n"
         f"💬 Комментарий: {data.get('comment', '—')}\n\n"
         "Подтвердите закрытие смены:"
     )
+    return "".join(lines)
 
 
 async def _ask_confirm_big_value(
@@ -94,6 +127,25 @@ async def _ask_confirm_big_value(
     )
 
 
+@router.message(ReportFSM.receipts, F.text)
+async def step_receipts(message: Message, state: FSMContext, session, **kwargs):
+    val = _parse_float(message.text)
+    if val is None or val < 0:
+        await message.answer("Введите число (приход), например 50000")
+        return
+    if val >= BIG_VALUE_THRESHOLDS.get("receipts", float("inf")):
+        await _ask_confirm_big_value(message, state, "receipts", val, from_editing=False)
+        return
+    await state.update_data(receipts=val)
+    data = await state.get_data()
+    if data.get("is_grocery_shop"):
+        await state.set_state(ReportFSM.revenue_meat)
+        await message.answer("Введите выручку по мясу (число):", reply_markup=kb_cancel_back())
+    else:
+        await state.set_state(ReportFSM.terminal_revenue)
+        await message.answer("Введите выручку по терминалу (число):", reply_markup=kb_cancel_back())
+
+
 @router.message(ReportFSM.revenue, F.text)
 async def step_revenue(message: Message, state: FSMContext, session, **kwargs):
     val = _parse_float(message.text)
@@ -104,6 +156,69 @@ async def step_revenue(message: Message, state: FSMContext, session, **kwargs):
         await _ask_confirm_big_value(message, state, "revenue", val, from_editing=False)
         return
     await state.update_data(revenue=val)
+    await state.set_state(ReportFSM.cash_balance)
+    await message.answer("Введите остаток наличных (число):", reply_markup=kb_cancel_back())
+
+
+@router.message(ReportFSM.revenue_meat, F.text)
+async def step_revenue_meat(message: Message, state: FSMContext, session, **kwargs):
+    val = _parse_float(message.text)
+    if val is None or val < 0:
+        await message.answer("Введите число (выручка по мясу), например 50000")
+        return
+    if val >= BIG_VALUE_THRESHOLDS.get("revenue", float("inf")):
+        await _ask_confirm_big_value(message, state, "revenue_meat", val, from_editing=False)
+        return
+    await state.update_data(revenue_meat=val)
+    await state.set_state(ReportFSM.revenue_store)
+    await message.answer("Введите выручку по магазину (число):", reply_markup=kb_cancel_back())
+
+
+@router.message(ReportFSM.revenue_store, F.text)
+async def step_revenue_store(message: Message, state: FSMContext, session, **kwargs):
+    val = _parse_float(message.text)
+    if val is None or val < 0:
+        await message.answer("Введите число (выручка по магазину), например 20000")
+        return
+    if val >= BIG_VALUE_THRESHOLDS.get("revenue", float("inf")):
+        await _ask_confirm_big_value(message, state, "revenue_store", val, from_editing=False)
+        return
+    data = await state.get_data()
+    revenue_total = (data.get("revenue_meat") or 0) + val
+    await state.update_data(revenue_store=val, revenue=revenue_total)
+    await state.set_state(ReportFSM.terminal_revenue)
+    await message.answer("Введите выручку по терминалу (число):", reply_markup=kb_cancel_back())
+
+
+@router.message(ReportFSM.terminal_revenue, F.text)
+async def step_terminal_revenue(message: Message, state: FSMContext, session, **kwargs):
+    val = _parse_float(message.text)
+    if val is None or val < 0:
+        await message.answer("Введите число (терминал), например 20000")
+        return
+    if val >= BIG_VALUE_THRESHOLDS.get("terminal_revenue", float("inf")):
+        await _ask_confirm_big_value(message, state, "terminal_revenue", val, from_editing=False)
+        return
+    await state.update_data(terminal_revenue=val)
+    await state.set_state(ReportFSM.cash_revenue)
+    await message.answer("Введите выручку наличными (число):", reply_markup=kb_cancel_back())
+
+
+@router.message(ReportFSM.cash_revenue, F.text)
+async def step_cash_revenue(message: Message, state: FSMContext, session, **kwargs):
+    val = _parse_float(message.text)
+    if val is None or val < 0:
+        await message.answer("Введите число (наличные от выручки), например 5000")
+        return
+    if val >= BIG_VALUE_THRESHOLDS.get("cash_revenue", float("inf")):
+        await _ask_confirm_big_value(message, state, "cash_revenue", val, from_editing=False)
+        return
+    data = await state.get_data()
+    if data.get("revenue_meat") is None:
+        revenue_total = (data.get("terminal_revenue") or 0) + val
+        await state.update_data(cash_revenue=val, revenue=revenue_total)
+    else:
+        await state.update_data(cash_revenue=val)
     await state.set_state(ReportFSM.cash_balance)
     await message.answer("Введите остаток наличных (число):", reply_markup=kb_cancel_back())
 
@@ -146,6 +261,20 @@ async def step_expenses(message: Message, state: FSMContext, session, **kwargs):
         await _ask_confirm_big_value(message, state, "expenses", val, from_editing=False)
         return
     await state.update_data(expenses=val)
+    await state.set_state(ReportFSM.surrender_amount)
+    await message.answer("Введите сдаю (сумма к сдаче, число):", reply_markup=kb_cancel_back())
+
+
+@router.message(ReportFSM.surrender_amount, F.text)
+async def step_surrender_amount(message: Message, state: FSMContext, session, **kwargs):
+    val = _parse_float(message.text)
+    if val is None or val < 0:
+        await message.answer("Введите число (сдаю), например 0")
+        return
+    if val >= BIG_VALUE_THRESHOLDS.get("surrender_amount", float("inf")):
+        await _ask_confirm_big_value(message, state, "surrender_amount", val, from_editing=False)
+        return
+    await state.update_data(surrender_amount=val)
     await state.set_state(ReportFSM.comment)
     await message.answer("Введите комментарий (можно кратко или «—»):", reply_markup=kb_cancel_back())
 
@@ -160,10 +289,13 @@ async def step_comment(message: Message, state: FSMContext, session, **kwargs):
 
 # Возврат на предыдущий шаг ввода отчёта: (текущее состояние, куда перейти, текст, клавиатура)
 _BACK_STEPS = [
-    (ReportFSM.cash_balance, ReportFSM.revenue, "Введите выручку за день (число):", kb_cancel),
+    (ReportFSM.comment, ReportFSM.surrender_amount, "Введите сдаю (число):", kb_cancel_back),
+    (ReportFSM.surrender_amount, ReportFSM.expenses, "Введите расходы / списания (число):", kb_cancel_back),
+    (ReportFSM.revenue_store, ReportFSM.revenue_meat, "Введите выручку по мясу (число):", kb_cancel_back),
+    (ReportFSM.revenue_meat, ReportFSM.receipts, "Введите приход (число):", kb_cancel),
+    (ReportFSM.cash_revenue, ReportFSM.terminal_revenue, "Введите выручку по терминалу (число):", kb_cancel_back),
     (ReportFSM.stock_balance, ReportFSM.cash_balance, "Введите остаток наличных (число):", kb_cancel_back),
     (ReportFSM.expenses, ReportFSM.stock_balance, "Введите остаток товара (число или количество):", kb_cancel_back),
-    (ReportFSM.comment, ReportFSM.expenses, "Введите расходы / списания (число):", kb_cancel_back),
 ]
 
 
@@ -173,6 +305,27 @@ async def report_step_back(callback: CallbackQuery, state: FSMContext, **kwargs)
     current = await state.get_state()
     if not current:
         await callback.answer()
+        return
+    # Из cash_balance — назад в cash_revenue
+    if current == ReportFSM.cash_balance.state:
+        await state.set_state(ReportFSM.cash_revenue)
+        prompt = "Введите выручку наличными (число):"
+        await callback.answer("Назад")
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await callback.message.answer(prompt, reply_markup=kb_cancel_back())
+        return
+    # Из terminal_revenue — назад в revenue_store (продуктовые) или receipts (мясные)
+    if current == ReportFSM.terminal_revenue.state:
+        data = await state.get_data()
+        if data.get("is_grocery_shop"):
+            await state.set_state(ReportFSM.revenue_store)
+            prompt = "Введите выручку по магазину (число):"
+        else:
+            await state.set_state(ReportFSM.receipts)
+            prompt = "Введите приход (число):"
+        await callback.answer("Назад")
+        await callback.message.edit_reply_markup(reply_markup=None)
+        await callback.message.answer(prompt, reply_markup=kb_cancel_back())
         return
     for from_state, to_state, prompt, kb in _BACK_STEPS:
         if from_state.state == current:
@@ -197,6 +350,10 @@ async def report_confirm_big_yes(callback: CallbackQuery, state: FSMContext, **k
         "pending_value": None,
         "pending_from_editing": None,
     }
+    if field == "revenue_store":
+        updates["revenue"] = (data.get("revenue_meat") or 0) + value
+    if field == "cash_revenue" and data.get("revenue_meat") is None:
+        updates["revenue"] = (data.get("terminal_revenue") or 0) + value
     if from_editing:
         updates["edit_field"] = None
     await state.update_data(**updates)
@@ -209,8 +366,12 @@ async def report_confirm_big_yes(callback: CallbackQuery, state: FSMContext, **k
             reply_markup=kb_confirm_close_shift(),
         )
         return
-    next_state = _NEXT_STATE_AFTER_FIELD.get(field)
-    prompt = _PROMPT_AFTER_FIELD.get(field, "")
+    if field == "receipts":
+        next_state = ReportFSM.revenue_meat if data.get("is_grocery_shop") else ReportFSM.terminal_revenue
+        prompt = "Введите выручку по мясу (число):" if data.get("is_grocery_shop") else "Введите выручку по терминалу (число):"
+    else:
+        next_state = _NEXT_STATE_AFTER_FIELD.get(field)
+        prompt = _PROMPT_AFTER_FIELD.get(field, "")
     await state.set_state(next_state)
     await callback.message.edit_text(prompt, reply_markup=kb_cancel_back())
 
@@ -240,11 +401,19 @@ async def report_confirm_big_no(callback: CallbackQuery, state: FSMContext, **kw
 async def report_edit_start(callback: CallbackQuery, state: FSMContext, **kwargs):
     """Показать выбор поля для изменения."""
     await callback.answer()
-    await callback.message.edit_text("✏️ Что изменить?", reply_markup=kb_edit_report_field())
+    data = await state.get_data()
+    is_grocery = data.get("is_grocery_shop", False)
+    await callback.message.edit_text("✏️ Что изменить?", reply_markup=kb_edit_report_field(is_grocery=is_grocery))
 
 
 _EDIT_PROMPTS = {
     "revenue": "Введите новое значение выручки (число):",
+    "revenue_meat": "Введите новое значение выручки по мясу (число):",
+    "revenue_store": "Введите новое значение выручки по магазину (число):",
+    "terminal_revenue": "Введите новое значение по терминалу (число):",
+    "cash_revenue": "Введите новое значение наличных от выручки (число):",
+    "receipts": "Введите новый приход (число):",
+    "surrender_amount": "Введите новое значение сдаю (число):",
     "cash_balance": "Введите новый остаток наличных (число):",
     "stock_balance": "Введите новый остаток товара (число):",
     "expenses": "Введите новые расходы (число):",
@@ -263,6 +432,12 @@ async def report_edit_choose(callback: CallbackQuery, state: FSMContext, **kwarg
         return
     field_map = {
         "revenue": "revenue",
+        "revenue_meat": "revenue_meat",
+        "revenue_store": "revenue_store",
+        "terminal_revenue": "terminal_revenue",
+        "cash_revenue": "cash_revenue",
+        "receipts": "receipts",
+        "surrender_amount": "surrender_amount",
         "cash": "cash_balance",
         "stock": "stock_balance",
         "expenses": "expenses",
@@ -300,7 +475,28 @@ async def report_edit_value(message: Message, state: FSMContext, **kwargs):
         if val >= BIG_VALUE_THRESHOLDS.get(edit_field, float("inf")):
             await _ask_confirm_big_value(message, state, edit_field, val, from_editing=True)
             return
-        await state.update_data(**{edit_field: val}, edit_field=None)
+        if edit_field == "revenue_meat":
+            await state.update_data(revenue_meat=val, edit_field=None)
+            data = await state.get_data()
+            if data.get("revenue_store") is not None:
+                await state.update_data(revenue=(val + (data.get("revenue_store") or 0)))
+        elif edit_field == "revenue_store":
+            await state.update_data(revenue_store=val, edit_field=None)
+            data = await state.get_data()
+            if data.get("revenue_meat") is not None:
+                await state.update_data(revenue=((data.get("revenue_meat") or 0) + val))
+        elif edit_field == "terminal_revenue":
+            await state.update_data(terminal_revenue=val, edit_field=None)
+            data = await state.get_data()
+            if data.get("revenue_meat") is None and data.get("cash_revenue") is not None:
+                await state.update_data(revenue=(val + (data.get("cash_revenue") or 0)))
+        elif edit_field == "cash_revenue":
+            await state.update_data(cash_revenue=val, edit_field=None)
+            data = await state.get_data()
+            if data.get("revenue_meat") is None and data.get("terminal_revenue") is not None:
+                await state.update_data(revenue=((data.get("terminal_revenue") or 0) + val))
+        else:
+            await state.update_data(**{edit_field: val}, edit_field=None)
     await state.set_state(ReportFSM.confirm)
     new_data = await state.get_data()
     await message.answer(_format_summary(new_data), reply_markup=kb_confirm_close_shift())
@@ -319,6 +515,8 @@ async def report_confirm(callback: CallbackQuery, state: FSMContext, session, se
         await callback.answer("Ошибка: смена не найдена. Начните заново.", show_alert=True)
         await state.clear()
         return
+    revenue_meat = data.get("revenue_meat")
+    revenue_store = data.get("revenue_store")
     ok = await shift_service.save_shift_report(
         session,
         shift_id=shift_id,
@@ -328,6 +526,12 @@ async def report_confirm(callback: CallbackQuery, state: FSMContext, session, se
         stock_balance=data["stock_balance"],
         expenses=data["expenses"],
         comment=data.get("comment", ""),
+        revenue_meat=revenue_meat,
+        revenue_store=revenue_store,
+        terminal_revenue=data.get("terminal_revenue"),
+        cash_revenue=data.get("cash_revenue"),
+        receipts=data.get("receipts", 0) or 0,
+        surrender_amount=data.get("surrender_amount", 0) or 0,
     )
     await state.clear()
     if not ok:
@@ -403,11 +607,12 @@ async def edit_report_value_cancel(callback: CallbackQuery, state: FSMContext, s
     if report_id:
         report = await shift_report_repo.get_report_by_id(session, report_id)
         if report:
+            is_grocery = getattr(report, "revenue_meat", None) is not None or getattr(report, "revenue_store", None) is not None
             text = report_service.format_report_for_edit(report)
             history = await report_service.get_edit_history_text(session, report_id)
             if history:
                 text += "\n\n" + history
-            await callback.message.edit_text(text, reply_markup=kb_edit_report_after_submit())
+            await callback.message.edit_text(text, reply_markup=kb_edit_report_after_submit(is_grocery=is_grocery))
     await callback.answer("Отменено")
 
 
@@ -423,6 +628,12 @@ async def report_cancel(callback: CallbackQuery, state: FSMContext, **kwargs):
 
 _EDIT_AFTER_PROMPTS = {
     "revenue": "Введите новое значение выручки (число):",
+    "revenue_meat": "Введите новое значение выручки по мясу (число):",
+    "revenue_store": "Введите новое значение выручки по магазину (число):",
+    "terminal_revenue": "Введите новое значение по терминалу (число):",
+    "cash_revenue": "Введите новое значение наличных от выручки (число):",
+    "receipts": "Введите новый приход (число):",
+    "surrender_amount": "Введите новое значение сдаю (число):",
     "cash_balance": "Введите новый остаток наличных (число):",
     "stock_balance": "Введите новый остаток товара (число):",
     "expenses": "Введите новые расходы (число):",
@@ -431,6 +642,8 @@ _EDIT_AFTER_PROMPTS = {
 
 _EDIT_FIELD_MAP = {
     "revenue": "revenue",
+    "revenue_meat": "revenue_meat",
+    "revenue_store": "revenue_store",
     "cash": "cash_balance",
     "stock": "stock_balance",
     "expenses": "expenses",
@@ -459,6 +672,10 @@ async def edit_report_offer(callback: CallbackQuery, state: FSMContext, session,
             show_alert=True,
         )
         return
+    is_grocery = (
+        getattr(shift.report, "revenue_meat", None) is not None
+        or getattr(shift.report, "revenue_store", None) is not None
+    )
     await state.set_state(EditReportFSM.choosing_field)
     await state.update_data(edit_report_id=shift.report.id, edit_shift_id=shift_id)
     text = report_service.format_report_for_edit(shift.report)
@@ -466,7 +683,7 @@ async def edit_report_offer(callback: CallbackQuery, state: FSMContext, session,
     if history:
         text += "\n\n" + history
     await callback.answer()
-    await callback.message.edit_text(text, reply_markup=kb_edit_report_after_submit())
+    await callback.message.edit_text(text, reply_markup=kb_edit_report_after_submit(is_grocery=is_grocery))
 
 
 @router.callback_query(EditReportFSM.choosing_field, F.data.startswith("edit_report_field_"))
@@ -515,6 +732,15 @@ async def edit_report_value_entered(message: Message, state: FSMContext, session
             await message.answer(f"Введите число. {_EDIT_AFTER_PROMPTS[edit_field]}")
             return
         kw = {edit_field: val}
+        report = await shift_report_repo.get_report_by_id(session, report_id)
+        if report and edit_field == "revenue_meat":
+            kw["revenue"] = val + (report.revenue_store or 0)
+        elif report and edit_field == "revenue_store":
+            kw["revenue"] = (report.revenue_meat or 0) + val
+        elif report and edit_field == "terminal_revenue":
+            kw["revenue"] = val + (getattr(report, "cash_revenue", None) or 0)
+        elif report and edit_field == "cash_revenue":
+            kw["revenue"] = (getattr(report, "terminal_revenue", None) or 0) + val
     ok = await shift_service.update_shift_report_with_log(
         session,
         report_id=report_id,

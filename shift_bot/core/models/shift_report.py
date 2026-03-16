@@ -18,6 +18,14 @@ class ShiftReport(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     shift_id: Mapped[int] = mapped_column(ForeignKey("shifts.id"), nullable=False, unique=True)
     revenue: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    # Для продуктовых магазинов (Казаки, Строитель): выручка по мясу и по магазину отдельно
+    revenue_meat: Mapped[float | None] = mapped_column(Float, nullable=True, default=None)
+    revenue_store: Mapped[float | None] = mapped_column(Float, nullable=True, default=None)
+    # Выручка: по терминалу (карта) и наличными
+    terminal_revenue: Mapped[float | None] = mapped_column(Float, nullable=True, default=None)
+    cash_revenue: Mapped[float | None] = mapped_column(Float, nullable=True, default=None)
+    receipts: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)  # приход
+    surrender_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)  # сдаю
     cash_balance: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     stock_balance: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     expenses: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
