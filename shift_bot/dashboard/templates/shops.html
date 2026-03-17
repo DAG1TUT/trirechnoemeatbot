@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Торговые точки</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="page">
+    <div class="page-gradient"></div>
+
+    <header class="shell header">
+      <div class="header-left">
+        <div class="brand-mark">
+          <span class="brand-dot"></span>
+          <span class="brand-pulse"></span>
+        </div>
+        <div>
+          <h1 class="header-title">Торговые точки</h1>
+          <p class="header-subtitle">Управление адресами и статусом точек</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="/" class="link-button">Обзор по выручке</a>
+      </div>
+    </header>
+
+    <main class="shell main">
+      <section class="panel">
+        <h2 class="panel-title">Добавить новую точку</h2>
+        <form method="post" action="/shops/add" class="form-row">
+          <input
+            type="text"
+            name="address"
+            placeholder="Адрес торговой точки"
+            class="text-input"
+            required
+          />
+          <button type="submit" class="primary-button">
+            <span class="button-dot"></span>
+            <span>Добавить</span>
+          </button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Список точек</h2>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Адрес</th>
+                <th>Статус</th>
+                <th class="table-actions">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in shops %}
+              <tr>
+                <td>{{ s.id }}</td>
+                <td>
+                  <form
+                    method="post"
+                    action="/shops/rename"
+                    class="inline-form"
+                  >
+                    <input type="hidden" name="shop_id" value="{{ s.id }}" />
+                    <input
+                      type="text"
+                      name="address"
+                      value="{{ s.address }}"
+                      class="text-input compact"
+                    />
+                    <button type="submit" class="ghost-button">
+                      Сохранить
+                    </button>
+                  </form>
+                </td>
+                <td>
+                  {% if s.is_active %}
+                  <span class="badge badge-open">активна</span>
+                  {% else %}
+                  <span class="badge badge-muted">отключена</span>
+                  {% endif %}
+                </td>
+                <td class="table-actions">
+                  <form
+                    method="post"
+                    action="/shops/toggle"
+                    class="inline-form"
+                  >
+                    <input type="hidden" name="shop_id" value="{{ s.id }}" />
+                    {% if s.is_active %}
+                    <input type="hidden" name="is_active" value="false" />
+                    <button type="submit" class="danger-button">
+                      Отключить
+                    </button>
+                    {% else %}
+                    <input type="hidden" name="is_active" value="true" />
+                    <button type="submit" class="success-button">
+                      Включить
+                    </button>
+                    {% endif %}
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
+

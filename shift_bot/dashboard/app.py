@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Optional
 
-from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi import Depends, FastAPI, Query, Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
@@ -14,6 +14,7 @@ from core.database import get_session
 from core.models.shift import Shift
 from core.models.shift_report import ShiftReport
 from core.models.shop import Shop
+from repositories import shop_repo, seller_repo
 
 
 app = FastAPI(title="Trirechno Meat Dashboard")
@@ -108,4 +109,96 @@ async def dashboard_index(
             "shops_closed": closed_count,
         },
     )
+
+
+@app.get("/shops", response_class=HTMLResponse)
+async def dashboard_shops(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    shops = await shop_repo.get_all_shops(session)
+    return templates.TemplateResponse(
+        "shops.html",
+        {
+            "request": request,
+            "shops": shops,
+        },
+    )
+
+
+@app.post("/shops/add")
+async def dashboard_shops_add(
+    address: str = Form(...),
+    session: AsyncSession = Depends(get_session),
+):
+    address = (address or "").strip()
+    if address:
+        await shop_repo.create_shop(session, address)
+    return RedirectResponse(url="/shops", status_code=303)
+
+
+@app.post("/shops/rename")
+async def dashboard_shops_rename(
+    shop_id: int = Form(...),
+    address: str = Form(...),
+    session: AsyncSession = Depends(get_session),
+):
+    await shop_repo.update_shop_address(session, shop_id, address)
+    return RedirectResponse(url="/shops", status_code=303)
+
+
+@app.post("/shops/toggle")
+async def dashboard_shops_toggle(
+    shop_id: int = Form(...),
+    is_active: bool = Form(...),
+    session: AsyncSession = Depends(get_session),
+):
+    await shop_repo.set_shop_active(session, shop_id, is_active)
+    return RedirectResponse(url="/shops", status_code=303)
+
+
+@app.get("/sellers", response_class=HTMLResponse)
+async def dashboard_sellers(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    sellers = await seller_repo.get_all_sellers(session)
+    return templates.TemplateResponse(
+        "sellers.html",
+        {
+            "request": request,
+            "sellers": sellers,
+        },
+    )
+
+
+@app.post("/sellers/add")
+async def dashboard_sellers_add(
+    full_name: str = Form(...),
+    session: AsyncSession = Depends(get_session),
+):
+    full_name = (full_name or "").strip()
+    if full_name:
+        await seller_repo.create_seller(session, full_name)
+    return RedirectResponse(url="/sellers", status_code=303)
+
+
+@app.post("/sellers/rename")
+async def dashboard_sellers_rename(
+    seller_id: int = Form(...),
+    full_name: str = Form(...),
+    session: AsyncSession = Depends(get_session),
+):
+    await seller_repo.update_seller_name(session, seller_id, full_name)
+    return RedirectResponse(url="/sellers", status_code=303)
+
+
+@app.post("/sellers/toggle")
+async def dashboard_sellers_toggle(
+    seller_id: int = Form(...),
+    is_active: bool = Form(...),
+    session: AsyncSession = Depends(get_session),
+):
+    await seller_repo.set_seller_active(session, seller_id, is_active)
+    return RedirectResponse(url="/sellers", status_code=303)
 
