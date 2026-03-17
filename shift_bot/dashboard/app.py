@@ -262,6 +262,144 @@ async def dashboard_report_day_mark_sent(
     )
 
 
+async def _get_all_closed_shifts_with_report(session: AsyncSession) -> list:
+    """Все закрытые смены с отчётами и связями (для рейтингов). Без зависимости от репо."""
+    result = await session.execute(
+        select(Shift)
+        .options(
+            selectinload(Shift.seller),
+            selectinload(Shift.shop),
+            selectinload(Shift.report),
+        )
+        .where(Shift.status == "closed")
+        .order_by(Shift.shift_date.desc(), Shift.close_time.desc())
+    )
+    return list(result.scalars().all())
+
+
+@app.get("/ratings", response_class=HTMLResponse)
+async def dashboard_ratings_index(request: Request):
+    """Страница выбора: рейтинг продавцов или рейтинг точек."""
+    return templates.TemplateResponse(
+        "ratings.html",
+        {"request": request},
+    )
+
+
+@app.get("/ratings/sellers", response_class=HTMLResponse)
+async def dashboard_ratings_sellers(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    """Рейтинг продавцов по средней выручке."""
+    shifts = await _get_all_closed_shifts_with_report(session)
+    by_seller: dict[int, list[float]] = {}
+    seller_objects: dict[int, object] = {}
+    for s in shifts:
+        if not s.report:
+            continue
+        if s.seller_id not in by_seller:
+            by_seller[s.seller_id] = []
+            if s.seller:
+                seller_objects[s.seller_id] = s.seller
+        by_seller[s.seller_id].append(s.report.revenue)
+    rows = []
+    for sid, revenues in by_seller.items():
+        seller = seller_objects.get(sid)
+        if not seller:
+            continue
+        total = sum(revenues)
+        rows.append({
+            "seller": seller,
+            "avg_revenue": total / len(revenues),
+            "shifts_count": len(revenues),
+            "total_revenue": total,
+        })
+    rows.sort(key=lambda r: r["avg_revenue"], reverse=True)
+    return templates.TemplateResponse(
+        "ratings_sellers.html",
+        {
+            "request": request,
+            "rows": rows,
+        },
+    )
+
+
+@app.get("/ratings/shops", response_class=HTMLResponse)
+async def dashboard_ratings_shops(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    """Рейтинг точек по средней выручке."""
+    shifts = await _get_all_closed_shifts_with_report(session)
+    by_shop: dict[int, list[float]] = {}
+    shop_objects: dict[int, object] = {}
+    for s in shifts:
+        if not s.report:
+            continue
+        if s.shop_id not in by_shop:
+            by_shop[s.shop_id] = []
+            if s.shop:
+                shop_objects[s.shop_id] = s.shop
+        by_shop[s.shop_id].append(s.report.revenue)
+    rows = []
+    for shop_id, revenues in by_shop.items():
+        shop = shop_objects.get(shop_id)
+        if not shop:
+            continue
+        total = sum(revenues)
+        rows.append({
+            "shop": shop,
+            "avg_revenue": total / len(revenues),
+            "shifts_count": len(revenues),
+            "total_revenue": total,
+        })
+    rows.sort(key=lambda r: r["avg_revenue"], reverse=True)
+    return templates.TemplateResponse(
+        "ratings_shops.html",
+        {
+            "request": request,
+            "rows": rows,
+        },
+    )
+
+
+@app.get("/seller/{seller_id:int}", response_class=HTMLResponse)
+async def dashboard_seller_detail(
+    request: Request,
+    seller_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    """Детализация по продавцу: все смены (дата, точка, выручка)."""
+    seller = await seller_repo.get_seller_by_id(session, seller_id)
+    if not seller:
+        return RedirectResponse(url="/", status_code=303)
+    result = await session.execute(
+        select(Shift)
+        .options(
+            selectinload(Shift.seller),
+            selectinload(Shift.shop),
+            selectinload(Shift.report),
+        )
+        .where(
+            Shift.seller_id == seller_id,
+            Shift.status == "closed",
+        )
+        .order_by(Shift.shift_date.desc(), Shift.close_time.desc())
+    )
+    shifts = list(result.scalars().all())
+    total_revenue = sum((s.report.revenue for s in shifts if s.report), 0.0)
+    return templates.TemplateResponse(
+        "seller_detail.html",
+        {
+            "request": request,
+            "seller": seller,
+            "shifts": shifts,
+            "total_revenue": total_revenue,
+        },
+    )
+
+
 @app.get("/shop/{shop_id:int}", response_class=HTMLResponse)
 async def dashboard_shop_detail(
     request: Request,

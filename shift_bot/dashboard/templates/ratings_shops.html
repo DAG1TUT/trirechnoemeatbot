@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Рейтинг точек</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="page">
+    <div class="page-gradient"></div>
+
+    <header class="shell header">
+      <div class="header-main">
+        <div class="header-left">
+          <a href="/" class="brand-link">
+            <div class="brand-mark">
+              <span class="brand-dot"></span>
+              <span class="brand-pulse"></span>
+            </div>
+            <div>
+              <h1 class="header-title">📈 Рейтинг точек</h1>
+              <p class="header-subtitle">
+                По средней выручке за смену
+              </p>
+            </div>
+          </a>
+        </div>
+        <div class="header-right">
+          <a href="/ratings" class="link-button">← К рейтингам</a>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <a href="/" class="nav-link">🏠 Главная</a>
+        <a href="/online" class="nav-link">🟢 Онлайн</a>
+        <a href="/reports" class="nav-link">📊 Отчёты</a>
+        <a href="/ratings" class="nav-link nav-link-active">📈 Рейтинги</a>
+        <a href="/shops" class="nav-link">🏬 Точки</a>
+        <a href="/sellers" class="nav-link">👤 Продавцы</a>
+      </nav>
+      <p class="breadcrumb">
+        <a href="/">Главная</a><span class="breadcrumb-sep">›</span>
+        <a href="/ratings">Рейтинги</a><span class="breadcrumb-sep">›</span>
+        Точки
+      </p>
+    </header>
+
+    <main class="shell main">
+      <section class="panel">
+        <h2 class="panel-title">Рейтинг по средней выручке за смену</h2>
+        {% if not rows %}
+        <p class="summary-sub">Нет данных по закрытым сменам для рейтинга.</p>
+        {% else %}
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Точка</th>
+                <th>Средняя выручка</th>
+                <th>Смен</th>
+                <th>Всего выручка</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                  <a href="/shop/{{ r.shop.id }}" class="table-link">
+                    {{ r.shop.address or ('Точка ' ~ r.shop.id) }}
+                  </a>
+                </td>
+                <td>{{ '{:,.0f}'.format(r.avg_revenue).replace(',', ' ') }} ₽</td>
+                <td>{{ r.shifts_count }}</td>
+                <td>{{ '{:,.0f}'.format(r.total_revenue).replace(',', ' ') }} ₽</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

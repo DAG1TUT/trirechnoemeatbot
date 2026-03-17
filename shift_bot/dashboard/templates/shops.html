@@ -31,6 +31,7 @@
         <a href="/" class="nav-link">🏠 Главная</a>
         <a href="/online" class="nav-link">🟢 Онлайн</a>
         <a href="/reports" class="nav-link">📊 Отчёты</a>
+        <a href="/ratings" class="nav-link">📈 Рейтинги</a>
         <a href="/shops" class="nav-link nav-link-active">🏬 Точки</a>
         <a href="/sellers" class="nav-link">👤 Продавцы</a>
       </nav>
@@ -59,8 +60,8 @@
 
       <section class="panel">
         <h2 class="panel-title">Список точек</h2>
-        <p class="summary-sub" style="margin-bottom: 0.5rem;">
-          <a href="/#shops-section">Вернуться к дашборду (блок точек)</a>
+        <p style="margin-bottom: 0.75rem;">
+          <a href="/#shops-section" class="action-button">← Вернуться к дашборду (блок точек)</a>
         </p>
         <div class="table-wrapper">
           <table class="data-table">
@@ -94,8 +95,8 @@
                         Сохранить
                       </button>
                     </form>
-                    <p class="summary-sub" style="margin: 0.25rem 0 0;">
-                      <a href="/shop/{{ s.id }}" class="table-link">Статистика по датам →</a>
+                    <p style="margin: 0.35rem 0 0;">
+                      <a href="/shop/{{ s.id }}" class="action-button action-button-sm">📊 Статистика по датам</a>
                     </p>
                   </div>
                 </td>

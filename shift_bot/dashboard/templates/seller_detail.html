@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{{ seller.full_name }} — смены</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="page">
+    <div class="page-gradient"></div>
+
+    <header class="shell header">
+      <div class="header-main">
+        <div class="header-left">
+          <a href="/" class="brand-link">
+            <div class="brand-mark">
+              <span class="brand-dot"></span>
+              <span class="brand-pulse"></span>
+            </div>
+            <div>
+              <h1 class="header-title">👤 {{ seller.full_name or ('ID' ~ seller.id) }}</h1>
+              <p class="header-subtitle">
+                Все смены и выручка
+              </p>
+            </div>
+          </a>
+        </div>
+        <div class="header-right">
+          <a href="/ratings/sellers" class="link-button">← К рейтингу продавцов</a>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <a href="/" class="nav-link">🏠 Главная</a>
+        <a href="/online" class="nav-link">🟢 Онлайн</a>
+        <a href="/reports" class="nav-link">📊 Отчёты</a>
+        <a href="/ratings" class="nav-link">📈 Рейтинги</a>
+        <a href="/shops" class="nav-link">🏬 Точки</a>
+        <a href="/sellers" class="nav-link nav-link-active">👤 Продавцы</a>
+      </nav>
+      <p class="breadcrumb">
+        <a href="/">Главная</a><span class="breadcrumb-sep">›</span>
+        <a href="/ratings">Рейтинги</a><span class="breadcrumb-sep">›</span>
+        <a href="/ratings/sellers">Продавцы</a><span class="breadcrumb-sep">›</span>
+        {{ seller.full_name or ('ID' ~ seller.id) }}
+      </p>
+    </header>
+
+    <main class="shell main">
+      <section class="summary-grid">
+        <div class="summary-card">
+          <p class="summary-label">Смен</p>
+          <p class="summary-value">{{ shifts|length }}</p>
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Всего выручка</p>
+          <p class="summary-value">
+            {{ '{:,.0f}'.format(total_revenue).replace(',', ' ') }} ₽
+          </p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Смены (дата — точка — выручка)</h2>
+        {% if not shifts %}
+        <p class="summary-sub">Нет закрытых смен.</p>
+        {% else %}
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Точка</th>
+                <th>Выручка</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in shifts %}
+              <tr>
+                <td>
+                  <a href="/report/day?day={{ s.shift_date.strftime('%Y-%m-%d') }}" class="table-link">
+                    {{ s.shift_date.strftime('%d.%m.%Y') }}
+                  </a>
+                </td>
+                <td>
+                  <a href="/shop/{{ s.shop_id }}" class="table-link">
+                    {{ s.shop.address if s.shop else ('Точка ' ~ s.shop_id) }}
+                  </a>
+                </td>
+                <td>
+                  {% if s.report %}
+                  {{ '{:,.0f}'.format(s.report.revenue).replace(',', ' ') }} ₽
+                  {% else %}—{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

@@ -43,6 +43,7 @@
         <a href="/" class="nav-link nav-link-active">🏠 Главная</a>
         <a href="/online" class="nav-link">🟢 Онлайн</a>
         <a href="/reports" class="nav-link">📊 Отчёты</a>
+        <a href="/ratings" class="nav-link">📈 Рейтинги</a>
         <a href="/shops" class="nav-link">🏬 Точки</a>
         <a href="/sellers" class="nav-link">👤 Продавцы</a>
       </nav>
@@ -87,6 +88,10 @@
           <span>📁</span>
           <strong>Отчёты за период</strong> — выручка по дням
         </a>
+        <a href="/ratings" class="quick-action">
+          <span>📈</span>
+          <strong>Рейтинги</strong> — продавцы и точки по средней выручке
+        </a>
       </div>
 
       <section class="shops-grid">
@@ -97,7 +102,7 @@
               <p class="shop-title">
                 <a href="/shop/{{ card.id }}" class="shop-title-link">{{ card.address }}</a>
               </p>
-              <p class="shop-subtitle">ID точки: {{ card.id }} · <a href="/shop/{{ card.id }}" class="table-link">вся статистика →</a></p>
+              <p class="shop-subtitle">ID: {{ card.id }} · <a href="/shop/{{ card.id }}" class="action-button action-button-sm">📊 Вся статистика</a></p>
             </div>
             <div class="shop-header-status">
               {% if not card.is_active %}
@@ -132,8 +137,8 @@
 
       <section class="panel" id="shops-section">
         <h2 class="panel-title">🏬 Торговые точки</h2>
-        <p class="summary-sub" style="margin-bottom: 0.5rem;">
-          <a href="/shops">Открыть полную страницу точек →</a>
+        <p style="margin-bottom: 0.75rem;">
+          <a href="/shops" class="action-button">🏬 Открыть полную страницу точек</a>
         </p>
         <form method="post" action="/shops/add" class="form-row">
           <input
@@ -209,8 +214,8 @@
 
       <section class="panel" id="sellers-section">
         <h2 class="panel-title">👤 Продавцы</h2>
-        <p class="summary-sub" style="margin-bottom: 0.5rem;">
-          <a href="/sellers">Открыть полную страницу продавцов →</a>
+        <p style="margin-bottom: 0.75rem;">
+          <a href="/sellers" class="action-button">👤 Открыть полную страницу продавцов</a>
         </p>
         <form method="post" action="/sellers/add" class="form-row">
           <input
