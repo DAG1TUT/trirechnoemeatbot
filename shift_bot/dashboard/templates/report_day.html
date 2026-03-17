@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Детальный отчёт за {{ day.strftime('%d.%m.%Y') }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="page">
+    <div class="page-gradient"></div>
+
+    <header class="shell header">
+      <div class="header-main">
+        <div class="header-left">
+          <div class="brand-mark">
+            <span class="brand-dot"></span>
+            <span class="brand-pulse"></span>
+          </div>
+          <div>
+            <h1 class="header-title">Детальный отчёт за {{ day.strftime('%d.%m.%Y') }}</h1>
+            <p class="header-subtitle">
+              По каждой точке: выручка, остатки, расходы, комментарий
+            </p>
+          </div>
+        </div>
+        <div class="header-right">
+          <a href="/reports?start={{ day.strftime('%Y-%m-%d') }}&end={{ day.strftime('%Y-%m-%d') }}" class="link-button">← К отчётам</a>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <a href="/" class="nav-link">Дашборд</a>
+        <a href="/online" class="nav-link">Онлайн</a>
+        <a href="/reports" class="nav-link nav-link-active">Отчёты</a>
+        <a href="/#shops-section" class="nav-link">Точки</a>
+        <a href="/#sellers-section" class="nav-link">Продавцы</a>
+      </nav>
+    </header>
+
+    <main class="shell main">
+      <section class="summary-grid">
+        <div class="summary-card">
+          <p class="summary-label">Дата</p>
+          <p class="summary-value">{{ day.strftime('%d.%m.%Y') }}</p>
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Итоговый отчёт отправлен</p>
+          <p class="summary-value">
+            {% if report_sent %}
+              Да
+              {% if sent_at %}
+                <span class="summary-sub">({{ sent_at.strftime('%d.%m.%Y %H:%M') }})</span>
+              {% endif %}
+            {% else %}
+              Нет
+            {% endif %}
+          </p>
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Итого выручка за день</p>
+          <p class="summary-value">
+            {{ '{:,.0f}'.format(total_revenue).replace(',', ' ') }} ₽
+          </p>
+        </div>
+      </section>
+
+      {% if not report_sent and shifts %}
+      <section class="panel">
+        <form method="post" action="/report/day/mark-sent" class="form-row">
+          <input type="hidden" name="day" value="{{ day.strftime('%Y-%m-%d') }}" />
+          <button type="submit" class="primary-button">
+            <span class="button-dot"></span>
+            <span>Отметить итоговый отчёт отправленным</span>
+          </button>
+        </form>
+      </section>
+      {% endif %}
+
+      <section class="panel">
+        <h2 class="panel-title">Закрытые смены за день</h2>
+        {% if not shifts %}
+        <p class="summary-sub">Нет закрытых смен за эту дату.</p>
+        {% else %}
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Точка</th>
+                <th>Продавец</th>
+                <th>Выручка</th>
+                <th>Остаток наличных</th>
+                <th>Остаток товара</th>
+                <th>Расходы</th>
+                <th>Комментарий</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in shifts %}
+              <tr>
+                <td>{{ s.shop.address }}</td>
+                <td>{{ s.seller.full_name }}</td>
+                <td>
+                  {% if s.report %}
+                  {{ '{:,.0f}'.format(s.report.revenue).replace(',', ' ') }} ₽
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if s.report %}
+                  {{ '{:,.0f}'.format(s.report.cash_balance).replace(',', ' ') }} ₽
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if s.report %}
+                  {{ '{:,.0f}'.format(s.report.stock_balance).replace(',', ' ') }}
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if s.report %}
+                  {{ '{:,.0f}'.format(s.report.expenses).replace(',', ' ') }} ₽
+                  {% else %}—{% endif %}
+                </td>
+                <td>{{ (s.report.comment or '—')[:50] }}{% if s.report and s.report.comment and s.report.comment|length > 50 %}…{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="summary-sub" style="margin-top: 0.75rem;">
+          Итого выручка по всем точкам: {{ '{:,.0f}'.format(total_revenue).replace(',', ' ') }} ₽
+        </p>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

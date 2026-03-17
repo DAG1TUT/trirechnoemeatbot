@@ -81,6 +81,9 @@
 
       <section class="panel">
         <h2 class="panel-title">Отчёты по дням</h2>
+        <p class="summary-sub" style="margin-bottom: 0.75rem;">
+          <a href="/report/day">Детальный отчёт за сегодня</a>
+        </p>
         {% if not daily %}
         <p class="summary-sub">
           Нет закрытых смен за выбранный период.
@@ -98,7 +101,11 @@
             <tbody>
               {% for row in daily %}
               <tr>
-                <td>{{ row.date.strftime('%d.%m.%Y') }}</td>
+                <td>
+                  <a href="/report/day?day={{ row.date.strftime('%Y-%m-%d') }}" class="nav-link" style="padding: 0.2rem 0.5rem;">
+                    {{ row.date.strftime('%d.%m.%Y') }}
+                  </a>
+                </td>
                 <td>{{ row.shifts_count }}</td>
                 <td>
                   {{ '{:,.0f}'.format(row.revenue).replace(',', ' ') }} ₽

@@ -206,6 +206,7 @@
               <tr>
                 <th>ID</th>
                 <th>ФИО</th>
+                <th>Telegram ID</th>
                 <th>Статус</th>
                 <th class="table-actions">Действия</th>
               </tr>
@@ -230,6 +231,20 @@
                     <button type="submit" class="ghost-button">
                       Сохранить
                     </button>
+                  </form>
+                </td>
+                <td>
+                  <form method="post" action="/sellers/bind-telegram" class="inline-form">
+                    <input type="hidden" name="seller_id" value="{{ s.id }}" />
+                    <input
+                      type="text"
+                      name="telegram_id"
+                      value="{{ s.telegram_id or '' }}"
+                      placeholder="—"
+                      class="text-input compact"
+                      style="max-width: 7rem;"
+                    />
+                    <button type="submit" class="ghost-button">OK</button>
                   </form>
                 </td>
                 <td>

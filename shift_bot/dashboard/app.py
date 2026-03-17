@@ -14,8 +14,8 @@ from core.database import get_session
 from core.models.shift import Shift
 from core.models.shift_report import ShiftReport
 from core.models.shop import Shop
-from repositories import shop_repo, seller_repo, shift_repo
-from services import shift_service
+from repositories import shop_repo, seller_repo, shift_repo, daily_report_status_repo
+from services import shift_service, report_service
 
 
 app = FastAPI(title="Trirechno Meat Dashboard")
@@ -221,6 +221,46 @@ async def dashboard_reports(
     )
 
 
+@app.get("/report/day", response_class=HTMLResponse)
+async def dashboard_report_day(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    day: Optional[str] = Query(None, description="Дата YYYY-MM-DD"),
+):
+    """Детальный отчёт за один день (как в боте: по точкам выручка, остатки, комментарий)."""
+    target_date = _parse_date(day)
+    shifts = await shift_repo.get_closed_shifts_by_date(session, target_date)
+    report_sent = await report_service.was_final_report_sent(session, target_date)
+    status = await daily_report_status_repo.get_status_by_date(session, target_date)
+    total_revenue = sum((s.report.revenue for s in shifts if s.report), 0.0)
+    return templates.TemplateResponse(
+        "report_day.html",
+        {
+            "request": request,
+            "view": "reports",
+            "day": target_date,
+            "shifts": shifts,
+            "report_sent": report_sent,
+            "sent_at": status.sent_at if status else None,
+            "total_revenue": total_revenue,
+        },
+    )
+
+
+@app.post("/report/day/mark-sent")
+async def dashboard_report_day_mark_sent(
+    day: str = Form(...),
+    session: AsyncSession = Depends(get_session),
+):
+    """Отметить итоговый отчёт за день как отправленный."""
+    target_date = _parse_date(day)
+    await report_service.mark_final_report_sent(session, target_date)
+    return RedirectResponse(
+        url=f"/report/day?day={target_date.strftime('%Y-%m-%d')}",
+        status_code=303,
+    )
+
+
 @app.get("/shops", response_class=HTMLResponse)
 async def dashboard_shops(
     request: Request,
@@ -311,4 +351,28 @@ async def dashboard_sellers_toggle(
 ):
     await seller_repo.set_seller_active(session, seller_id, is_active)
     return RedirectResponse(url="/", status_code=303)
+
+
+@app.post("/sellers/bind-telegram")
+async def dashboard_sellers_bind_telegram(
+    seller_id: int = Form(...),
+    telegram_id: Optional[str] = Form(None),
+    session: AsyncSession = Depends(get_session),
+):
+    """Привязать или отвязать Telegram ID у продавца. Пустое значение — отвязка."""
+    seller = await seller_repo.get_seller_by_id(session, seller_id)
+    if not seller:
+        return RedirectResponse(url="/", status_code=303)
+    raw = (telegram_id or "").strip()
+    if not raw:
+        seller.telegram_id = None
+        session.add(seller)
+        await session.flush()
+    else:
+        try:
+            tid = int(raw)
+            await seller_repo.bind_telegram_to_seller(session, seller_id, tid)
+        except ValueError:
+            pass
+    return RedirectResponse(url="/#sellers-section", status_code=303)
 
