@@ -14,6 +14,10 @@ def kb_admin_main() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="📄 Итоговый отчет")],
             [KeyboardButton(text="📅 История")],
             [KeyboardButton(text="⚠️ Незакрытые точки")],
+            [
+                KeyboardButton(text="👤 Продавцы"),
+                KeyboardButton(text="🏬 Торговые точки"),
+            ],
         ],
         resize_keyboard=True,
     )
