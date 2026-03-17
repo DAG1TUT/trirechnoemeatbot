@@ -70,6 +70,32 @@ async def admin_who_where(message: Message, session, role, **kwargs):
     await message.answer("\n".join(lines))
 
 
+@router.message(F.text == "📅 График смен")
+async def admin_schedule(message: Message, session, role, **kwargs):
+    """График смен за сегодня: кто когда вышел на точку, когда закрыл. Заполняется автоматически при открытии/закрытии смен в боте."""
+    if not _admin_only(role):
+        return
+    today = date.today()
+    shifts = await shift_repo.get_shifts_by_date(session, today)
+    if not shifts:
+        await message.answer(
+            f"📅 График смен на {today.strftime('%d.%m.%Y')}\n\n"
+            "За сегодня смен пока нет. График заполняется автоматически, когда продавцы выходят на смены в боте.\n\n"
+            "Полный график по любой дате можно посмотреть в дашборде (вкладка «График»)."
+        )
+        return
+    lines = [f"📅 График смен на {today.strftime('%d.%m.%Y')}:\n"]
+    for s in shifts:
+        addr = s.shop.address if s.shop else f"Точка {s.shop_id}"
+        name = s.seller.full_name if s.seller else f"ID{s.seller_id}"
+        open_t = s.open_time.strftime("%H:%M") if s.open_time else "—"
+        close_t = s.close_time.strftime("%H:%M") if s.close_time else "открыта"
+        status = "🟢 открыта" if s.status == "open" else "✅ закрыта"
+        lines.append(f"📍 {addr}\n   👤 {name} · выход {open_t} · закрытие {close_t} · {status}")
+    lines.append("\nПолный график по любой дате — в дашборде (вкладка «График»).")
+    await message.answer("\n".join(lines))
+
+
 @router.message(F.text == "📊 Отчет за сегодня")
 async def admin_report_today(message: Message, session, role, **kwargs):
     """Промежуточный отчёт за сегодня (по закрытым сменам на момент запроса)."""

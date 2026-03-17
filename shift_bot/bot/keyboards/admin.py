@@ -15,6 +15,7 @@ def kb_admin_main() -> ReplyKeyboardMarkup:
         keyboard=[
             [KeyboardButton(text="🟢 Активные смены")],
             [KeyboardButton(text="👥 Кто где работает")],
+            [KeyboardButton(text="📅 График смен")],
             [KeyboardButton(text="📊 Отчет за сегодня")],
             [KeyboardButton(text="📄 Итоговый отчет")],
             [KeyboardButton(text="📅 История")],

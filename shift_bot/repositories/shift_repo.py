@@ -82,6 +82,23 @@ async def get_closed_shifts_by_date(
     return list(result.scalars().all())
 
 
+async def get_shifts_by_date(
+    session: AsyncSession, target_date: date
+) -> list[Shift]:
+    """Все смены за дату (открытые и закрытые) для графика: кто когда вышел, когда закрыл."""
+    result = await session.execute(
+        select(Shift)
+        .options(
+            selectinload(Shift.seller),
+            selectinload(Shift.shop),
+            selectinload(Shift.report),
+        )
+        .where(Shift.shift_date == target_date)
+        .order_by(Shift.open_time, Shift.id)
+    )
+    return list(result.scalars().all())
+
+
 async def get_closed_shifts_in_date_range(
     session: AsyncSession, start_date: date, end_date: date
 ) -> list[Shift]:

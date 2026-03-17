@@ -138,6 +138,37 @@ async def dashboard_index(
     )
 
 
+@app.get("/schedule", response_class=HTMLResponse)
+async def dashboard_schedule(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    day: Optional[str] = Query(None, description="Дата в формате YYYY-MM-DD"),
+):
+    """График смен за выбранную дату: кто когда вышел на точку, когда закрыл."""
+    target_date = _parse_date(day)
+    result = await session.execute(
+        select(Shift)
+        .options(
+            selectinload(Shift.seller),
+            selectinload(Shift.shop),
+            selectinload(Shift.report),
+        )
+        .where(Shift.shift_date == target_date)
+        .order_by(Shift.open_time, Shift.id)
+    )
+    shifts = list(result.scalars().all())
+
+    return templates.TemplateResponse(
+        "schedule.html",
+        {
+            "request": request,
+            "view": "schedule",
+            "day": target_date,
+            "shifts": shifts,
+        },
+    )
+
+
 @app.get("/online", response_class=HTMLResponse)
 async def dashboard_online(
     request: Request,

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>График смен — {{ day.strftime('%d.%m.%Y') }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="page">
+    <div class="page-gradient"></div>
+
+    <header class="shell header">
+      <div class="header-main">
+        <div class="header-left">
+          <a href="/" class="brand-link">
+            <div class="brand-mark">
+              <span class="brand-dot"></span>
+              <span class="brand-pulse"></span>
+            </div>
+            <div>
+              <h1 class="header-title">📅 График смен</h1>
+              <p class="header-subtitle">
+                Кто когда вышел на точку и когда закрыл смену
+              </p>
+            </div>
+          </a>
+        </div>
+        <form method="get" class="header-right">
+          <label class="field-label">Дата</label>
+          <input
+            type="date"
+            name="day"
+            value="{{ day.strftime('%Y-%m-%d') }}"
+            class="date-input"
+          />
+          <button type="submit" class="primary-button">
+            <span class="button-dot"></span>
+            <span>Показать</span>
+          </button>
+        </form>
+      </div>
+      <nav class="header-nav">
+        <a href="/" class="nav-link">🏠 Главная</a>
+        <a href="/online" class="nav-link">🟢 Онлайн</a>
+        <a href="/schedule" class="nav-link nav-link-active">📅 График</a>
+        <a href="/reports" class="nav-link">📊 Отчёты</a>
+        <a href="/ratings" class="nav-link">📈 Рейтинги</a>
+        <a href="/shops" class="nav-link">🏬 Точки</a>
+        <a href="/sellers" class="nav-link">👤 Продавцы</a>
+      </nav>
+      <p class="breadcrumb">
+        <a href="/">Главная</a><span class="breadcrumb-sep">›</span> График смен
+      </p>
+    </header>
+
+    <main class="shell main">
+      <section class="summary-grid">
+        <div class="summary-card">
+          <p class="summary-label">Дата</p>
+          <p class="summary-value">{{ day.strftime('%d.%m.%Y') }}</p>
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Смен за день</p>
+          <p class="summary-value">{{ shifts|length }}</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">График выхода на смены</h2>
+        <p class="summary-sub" style="margin-bottom: 0.75rem;">
+          Данные заполняются автоматически, когда продавцы открывают и закрывают смены в боте.
+        </p>
+        {% if not shifts %}
+        <p class="summary-sub">За выбранную дату смен пока нет.</p>
+        {% else %}
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Точка</th>
+                <th>Продавец</th>
+                <th>Выход на смену</th>
+                <th>Закрытие</th>
+                <th>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in shifts %}
+              <tr>
+                <td>
+                  <a href="/shop/{{ s.shop_id }}" class="table-link">{{ s.shop.address if s.shop else ('Точка ' ~ s.shop_id) }}</a>
+                </td>
+                <td>
+                  <a href="/seller/{{ s.seller_id }}" class="table-link">{{ s.seller.full_name if s.seller else ('ID' ~ s.seller_id) }}</a>
+                </td>
+                <td>
+                  {% if s.open_time %}{{ s.open_time.strftime('%H:%M') }}{% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if s.close_time %}{{ s.close_time.strftime('%H:%M') }}{% else %}<span class="badge badge-open">открыта</span>{% endif %}
+                </td>
+                <td>
+                  {% if s.status == 'open' %}
+                  <span class="badge badge-open">открыта</span>
+                  {% else %}
+                  <span class="badge badge-closed">закрыта</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>
