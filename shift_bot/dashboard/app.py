@@ -10,10 +10,10 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.database import get_session
-from core.models.shift import Shift
-from core.models.shift_report import ShiftReport
-from core.models.shop import Shop
+from shift_bot.core.database import get_session
+from shift_bot.core.models.shift import Shift
+from shift_bot.core.models.shift_report import ShiftReport
+from shift_bot.core.models.shop import Shop
 
 
 app = FastAPI(title="Trirechno Meat Dashboard")
