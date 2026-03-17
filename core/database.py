@@ -6,9 +6,21 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from config import DATABASE_URL
+from config import DATABASE_URL as _RAW_DATABASE_URL
 from core.models.base import Base
 from core import models  # noqa: F401 — регистрация всех моделей в Base.metadata
+
+
+def _make_async_url(url: str) -> str:
+    """Гарантировать, что используется async‑драйвер (asyncpg) для PostgreSQL."""
+    if "postgresql+asyncpg" in url:
+        return url
+    if url.startswith("postgresql://") or url.startswith("postgres://"):
+        return "postgresql+asyncpg://" + url.split("://", 1)[1]
+    return url
+
+
+DATABASE_URL = _make_async_url(_RAW_DATABASE_URL)
 
 # echo=True для отладки SQL
 engine = create_async_engine(
