@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 from fastapi import Depends, FastAPI, Query, Request, Form
@@ -261,6 +261,68 @@ async def dashboard_report_day_mark_sent(
     )
 
 
+@app.get("/shop/{shop_id:int}", response_class=HTMLResponse)
+async def dashboard_shop_detail(
+    request: Request,
+    shop_id: int,
+    session: AsyncSession = Depends(get_session),
+    start: Optional[str] = Query(None, description="Начало периода YYYY-MM-DD"),
+    end: Optional[str] = Query(None, description="Конец периода YYYY-MM-DD"),
+):
+    """Статистика и все данные по датам для одной точки."""
+    shop = await shop_repo.get_shop_by_id(session, shop_id)
+    if not shop:
+        return RedirectResponse(url="/", status_code=303)
+    end_date = _parse_date(end)
+    start_date = _parse_date(start)
+    if not start:
+        start_date = end_date - timedelta(days=89)
+    if end_date < start_date:
+        start_date, end_date = end_date, start_date
+    shifts = await shift_repo.get_closed_shifts_in_date_range(
+        session, start_date, end_date
+    )
+    shop_shifts = [s for s in shifts if s.shop_id == shop_id]
+    by_date: dict[date, list] = {}
+    for s in shop_shifts:
+        d = s.shift_date
+        if d not in by_date:
+            by_date[d] = []
+        by_date[d].append(s)
+    rows = []
+    total_revenue = 0.0
+    for d in sorted(by_date.keys(), reverse=True):
+        day_shifts = by_date[d]
+        day_revenue = sum(
+            (s.report.revenue for s in day_shifts if s.report),
+            0.0,
+        )
+        sellers = ", ".join(
+            (s.seller.full_name for s in day_shifts if s.seller)
+        ) or "—"
+        total_revenue += day_revenue
+        rows.append(
+            {
+                "date": d,
+                "revenue": day_revenue,
+                "sellers": sellers,
+                "shifts_count": len(day_shifts),
+            }
+        )
+    return templates.TemplateResponse(
+        "shop_detail.html",
+        {
+            "request": request,
+            "shop": shop,
+            "start_date": start_date,
+            "end_date": end_date,
+            "rows": rows,
+            "total_revenue": total_revenue,
+            "total_days": len(rows),
+        },
+    )
+
+
 @app.get("/shops", response_class=HTMLResponse)
 async def dashboard_shops(
     request: Request,
@@ -284,7 +346,7 @@ async def dashboard_shops_add(
     address = (address or "").strip()
     if address:
         await shop_repo.create_shop(session, address)
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/shops", status_code=303)
 
 
 @app.post("/shops/rename")
@@ -294,7 +356,7 @@ async def dashboard_shops_rename(
     session: AsyncSession = Depends(get_session),
 ):
     await shop_repo.update_shop_address(session, shop_id, address)
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/shops", status_code=303)
 
 
 @app.post("/shops/toggle")
@@ -304,7 +366,7 @@ async def dashboard_shops_toggle(
     session: AsyncSession = Depends(get_session),
 ):
     await shop_repo.set_shop_active(session, shop_id, is_active)
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/shops", status_code=303)
 
 
 @app.get("/sellers", response_class=HTMLResponse)
@@ -330,7 +392,7 @@ async def dashboard_sellers_add(
     full_name = (full_name or "").strip()
     if full_name:
         await seller_repo.create_seller(session, full_name)
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/sellers", status_code=303)
 
 
 @app.post("/sellers/rename")
@@ -340,7 +402,7 @@ async def dashboard_sellers_rename(
     session: AsyncSession = Depends(get_session),
 ):
     await seller_repo.update_seller_name(session, seller_id, full_name)
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/sellers", status_code=303)
 
 
 @app.post("/sellers/toggle")
@@ -350,7 +412,7 @@ async def dashboard_sellers_toggle(
     session: AsyncSession = Depends(get_session),
 ):
     await seller_repo.set_seller_active(session, seller_id, is_active)
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/sellers", status_code=303)
 
 
 @app.post("/sellers/bind-telegram")
@@ -374,5 +436,5 @@ async def dashboard_sellers_bind_telegram(
             await seller_repo.bind_telegram_to_seller(session, seller_id, tid)
         except ValueError:
             pass
-    return RedirectResponse(url="/#sellers-section", status_code=303)
+    return RedirectResponse(url="/sellers", status_code=303)
 

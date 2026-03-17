@@ -12,16 +12,18 @@
     <header class="shell header">
       <div class="header-main">
         <div class="header-left">
-          <div class="brand-mark">
-            <span class="brand-dot"></span>
-            <span class="brand-pulse"></span>
-          </div>
-          <div>
-            <h1 class="header-title">Онлайн — активные смены</h1>
-            <p class="header-subtitle">
-              Кто где работает сейчас и какие точки ещё без закрытой смены
-            </p>
-          </div>
+          <a href="/" class="brand-link">
+            <div class="brand-mark">
+              <span class="brand-dot"></span>
+              <span class="brand-pulse"></span>
+            </div>
+            <div>
+              <h1 class="header-title">Онлайн — активные смены</h1>
+              <p class="header-subtitle">
+                Кто где работает сейчас и какие точки ещё без закрытой смены
+              </p>
+            </div>
+          </a>
         </div>
         <form method="get" class="header-right">
           <label class="field-label">Дата</label>
@@ -33,17 +35,20 @@
           />
           <button type="submit" class="primary-button">
             <span class="button-dot"></span>
-            <span>Обновить</span>
+            <span>Показать</span>
           </button>
         </form>
       </div>
       <nav class="header-nav">
-        <a href="/" class="nav-link">Дашборд</a>
-        <a href="/online" class="nav-link nav-link-active">Онлайн</a>
-        <a href="/reports" class="nav-link">Отчёты</a>
-        <a href="/#shops-section" class="nav-link">Точки</a>
-        <a href="/#sellers-section" class="nav-link">Продавцы</a>
+        <a href="/" class="nav-link">🏠 Главная</a>
+        <a href="/online" class="nav-link nav-link-active">🟢 Онлайн</a>
+        <a href="/reports" class="nav-link">📊 Отчёты</a>
+        <a href="/shops" class="nav-link">🏬 Точки</a>
+        <a href="/sellers" class="nav-link">👤 Продавцы</a>
       </nav>
+      <p class="breadcrumb">
+        <a href="/">Главная</a><span class="breadcrumb-sep">›</span> Онлайн
+      </p>
     </header>
 
     <main class="shell main">

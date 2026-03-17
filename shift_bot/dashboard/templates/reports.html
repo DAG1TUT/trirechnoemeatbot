@@ -12,16 +12,18 @@
     <header class="shell header">
       <div class="header-main">
         <div class="header-left">
-          <div class="brand-mark">
-            <span class="brand-dot"></span>
-            <span class="brand-pulse"></span>
-          </div>
-          <div>
-            <h1 class="header-title">Отчёты по выручке</h1>
-            <p class="header-subtitle">
-              Отчёт за сегодня, за дату или за произвольный период
-            </p>
-          </div>
+          <a href="/" class="brand-link">
+            <div class="brand-mark">
+              <span class="brand-dot"></span>
+              <span class="brand-pulse"></span>
+            </div>
+            <div>
+              <h1 class="header-title">Отчёты по выручке</h1>
+              <p class="header-subtitle">
+                Отчёт за сегодня, за дату или за произвольный период
+              </p>
+            </div>
+          </a>
         </div>
         <form method="get" class="header-right">
           <div>
@@ -49,12 +51,15 @@
         </form>
       </div>
       <nav class="header-nav">
-        <a href="/" class="nav-link">Дашборд</a>
-        <a href="/online" class="nav-link">Онлайн</a>
-        <a href="/reports" class="nav-link nav-link-active">Отчёты</a>
-        <a href="/#shops-section" class="nav-link">Точки</a>
-        <a href="/#sellers-section" class="nav-link">Продавцы</a>
+        <a href="/" class="nav-link">🏠 Главная</a>
+        <a href="/online" class="nav-link">🟢 Онлайн</a>
+        <a href="/reports" class="nav-link nav-link-active">📊 Отчёты</a>
+        <a href="/shops" class="nav-link">🏬 Точки</a>
+        <a href="/sellers" class="nav-link">👤 Продавцы</a>
       </nav>
+      <p class="breadcrumb">
+        <a href="/">Главная</a><span class="breadcrumb-sep">›</span> Отчёты
+      </p>
     </header>
 
     <main class="shell main">
@@ -82,7 +87,8 @@
       <section class="panel">
         <h2 class="panel-title">Отчёты по дням</h2>
         <p class="summary-sub" style="margin-bottom: 0.75rem;">
-          <a href="/report/day">Детальный отчёт за сегодня</a>
+          <a href="/report/day" class="link-button">📊 Детальный отчёт за сегодня</a>
+          <span style="margin-left: 0.5rem; color: rgba(148,163,184,0.7);">Клик по дате в таблице — детальный отчёт за день.</span>
         </p>
         {% if not daily %}
         <p class="summary-sub">
@@ -102,7 +108,7 @@
               {% for row in daily %}
               <tr>
                 <td>
-                  <a href="/report/day?day={{ row.date.strftime('%Y-%m-%d') }}" class="nav-link" style="padding: 0.2rem 0.5rem;">
+                  <a href="/report/day?day={{ row.date.strftime('%Y-%m-%d') }}" class="table-link">
                     {{ row.date.strftime('%d.%m.%Y') }}
                   </a>
                 </td>

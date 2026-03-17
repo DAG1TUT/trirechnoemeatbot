@@ -12,16 +12,18 @@
     <header class="shell header">
       <div class="header-main">
         <div class="header-left">
-          <div class="brand-mark">
-            <span class="brand-dot"></span>
-            <span class="brand-pulse"></span>
-          </div>
-          <div>
-            <h1 class="header-title">Отчёты торговых точек</h1>
-            <p class="header-subtitle">
-              Состояние всех точек и выручка за выбранный день
-            </p>
-          </div>
+          <a href="/" class="brand-link">
+            <div class="brand-mark">
+              <span class="brand-dot"></span>
+              <span class="brand-pulse"></span>
+            </div>
+            <div>
+              <h1 class="header-title">Отчёты торговых точек</h1>
+              <p class="header-subtitle">
+                Состояние всех точек и выручка за выбранный день
+              </p>
+            </div>
+          </a>
         </div>
         <form method="get" class="header-right">
           <label class="field-label">Дата</label>
@@ -33,17 +35,18 @@
           />
           <button type="submit" class="primary-button">
             <span class="button-dot"></span>
-            <span>Обновить</span>
+            <span>Показать</span>
           </button>
         </form>
       </div>
       <nav class="header-nav">
-        <a href="/" class="nav-link nav-link-active">Дашборд</a>
-        <a href="/online" class="nav-link">Онлайн</a>
-        <a href="/reports" class="nav-link">Отчёты</a>
-        <a href="#shops-section" class="nav-link">Точки</a>
-        <a href="#sellers-section" class="nav-link">Продавцы</a>
+        <a href="/" class="nav-link nav-link-active">🏠 Главная</a>
+        <a href="/online" class="nav-link">🟢 Онлайн</a>
+        <a href="/reports" class="nav-link">📊 Отчёты</a>
+        <a href="/shops" class="nav-link">🏬 Точки</a>
+        <a href="/sellers" class="nav-link">👤 Продавцы</a>
       </nav>
+      <p class="breadcrumb">Главная</p>
     </header>
 
     <main class="shell main" id="top">
@@ -71,13 +74,30 @@
         </div>
       </section>
 
+      <div class="quick-actions">
+        <a href="/online" class="quick-action">
+          <span>🟢</span>
+          <strong>Онлайн</strong> — активные смены и незакрытые точки
+        </a>
+        <a href="/report/day" class="quick-action">
+          <span>📊</span>
+          <strong>Отчёт за сегодня</strong> — детально по точкам
+        </a>
+        <a href="/reports" class="quick-action">
+          <span>📁</span>
+          <strong>Отчёты за период</strong> — выручка по дням
+        </a>
+      </div>
+
       <section class="shops-grid">
         {% for card in cards %}
         <article class="shop-card">
           <header class="shop-header">
             <div class="shop-header-main">
-              <p class="shop-title">{{ card.address }}</p>
-              <p class="shop-subtitle">ID точки: {{ card.id }}</p>
+              <p class="shop-title">
+                <a href="/shop/{{ card.id }}" class="shop-title-link">{{ card.address }}</a>
+              </p>
+              <p class="shop-subtitle">ID точки: {{ card.id }} · <a href="/shop/{{ card.id }}" class="table-link">вся статистика →</a></p>
             </div>
             <div class="shop-header-status">
               {% if not card.is_active %}
@@ -111,7 +131,10 @@
       </section>
 
       <section class="panel" id="shops-section">
-        <h2 class="panel-title">Торговые точки</h2>
+        <h2 class="panel-title">🏬 Торговые точки</h2>
+        <p class="summary-sub" style="margin-bottom: 0.5rem;">
+          <a href="/shops">Открыть полную страницу точек →</a>
+        </p>
         <form method="post" action="/shops/add" class="form-row">
           <input
             type="text"
@@ -185,7 +208,10 @@
       </section>
 
       <section class="panel" id="sellers-section">
-        <h2 class="panel-title">Продавцы</h2>
+        <h2 class="panel-title">👤 Продавцы</h2>
+        <p class="summary-sub" style="margin-bottom: 0.5rem;">
+          <a href="/sellers">Открыть полную страницу продавцов →</a>
+        </p>
         <form method="post" action="/sellers/add" class="form-row">
           <input
             type="text"

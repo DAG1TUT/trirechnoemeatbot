@@ -12,28 +12,35 @@
     <header class="shell header">
       <div class="header-main">
         <div class="header-left">
-          <div class="brand-mark">
-            <span class="brand-dot"></span>
-            <span class="brand-pulse"></span>
-          </div>
-          <div>
-            <h1 class="header-title">Детальный отчёт за {{ day.strftime('%d.%m.%Y') }}</h1>
-            <p class="header-subtitle">
-              По каждой точке: выручка, остатки, расходы, комментарий
-            </p>
-          </div>
+          <a href="/" class="brand-link">
+            <div class="brand-mark">
+              <span class="brand-dot"></span>
+              <span class="brand-pulse"></span>
+            </div>
+            <div>
+              <h1 class="header-title">Детальный отчёт за {{ day.strftime('%d.%m.%Y') }}</h1>
+              <p class="header-subtitle">
+                По каждой точке: выручка, остатки, расходы, комментарий
+              </p>
+            </div>
+          </a>
         </div>
         <div class="header-right">
-          <a href="/reports?start={{ day.strftime('%Y-%m-%d') }}&end={{ day.strftime('%Y-%m-%d') }}" class="link-button">← К отчётам</a>
+          <a href="/reports?start={{ day.strftime('%Y-%m-%d') }}&end={{ day.strftime('%Y-%m-%d') }}" class="link-button">← К списку отчётов</a>
         </div>
       </div>
       <nav class="header-nav">
-        <a href="/" class="nav-link">Дашборд</a>
-        <a href="/online" class="nav-link">Онлайн</a>
-        <a href="/reports" class="nav-link nav-link-active">Отчёты</a>
-        <a href="/#shops-section" class="nav-link">Точки</a>
-        <a href="/#sellers-section" class="nav-link">Продавцы</a>
+        <a href="/" class="nav-link">🏠 Главная</a>
+        <a href="/online" class="nav-link">🟢 Онлайн</a>
+        <a href="/reports" class="nav-link nav-link-active">📊 Отчёты</a>
+        <a href="/shops" class="nav-link">🏬 Точки</a>
+        <a href="/sellers" class="nav-link">👤 Продавцы</a>
       </nav>
+      <p class="breadcrumb">
+        <a href="/">Главная</a><span class="breadcrumb-sep">›</span>
+        <a href="/reports">Отчёты</a><span class="breadcrumb-sep">›</span>
+        {{ day.strftime('%d.%m.%Y') }}
+      </p>
     </header>
 
     <main class="shell main">

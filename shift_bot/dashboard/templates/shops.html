@@ -10,24 +10,38 @@
     <div class="page-gradient"></div>
 
     <header class="shell header">
-      <div class="header-left">
-        <div class="brand-mark">
-          <span class="brand-dot"></span>
-          <span class="brand-pulse"></span>
+      <div class="header-main">
+        <div class="header-left">
+          <a href="/" class="brand-link">
+            <div class="brand-mark">
+              <span class="brand-dot"></span>
+              <span class="brand-pulse"></span>
+            </div>
+            <div>
+              <h1 class="header-title">🏬 Торговые точки</h1>
+              <p class="header-subtitle">Управление адресами и статусом точек</p>
+            </div>
+          </a>
         </div>
-        <div>
-          <h1 class="header-title">Торговые точки</h1>
-          <p class="header-subtitle">Управление адресами и статусом точек</p>
+        <div class="header-right">
+          <a href="/" class="link-button">← На главную</a>
         </div>
       </div>
-      <div class="header-right">
-        <a href="/" class="link-button">Обзор по выручке</a>
-      </div>
+      <nav class="header-nav">
+        <a href="/" class="nav-link">🏠 Главная</a>
+        <a href="/online" class="nav-link">🟢 Онлайн</a>
+        <a href="/reports" class="nav-link">📊 Отчёты</a>
+        <a href="/shops" class="nav-link nav-link-active">🏬 Точки</a>
+        <a href="/sellers" class="nav-link">👤 Продавцы</a>
+      </nav>
+      <p class="breadcrumb">
+        <a href="/">Главная</a><span class="breadcrumb-sep">›</span> Торговые точки
+      </p>
     </header>
 
     <main class="shell main">
       <section class="panel">
-        <h2 class="panel-title">Добавить новую точку</h2>
+        <h2 class="panel-title">➕ Добавить новую точку</h2>
         <form method="post" action="/shops/add" class="form-row">
           <input
             type="text"
@@ -45,6 +59,9 @@
 
       <section class="panel">
         <h2 class="panel-title">Список точек</h2>
+        <p class="summary-sub" style="margin-bottom: 0.5rem;">
+          <a href="/#shops-section">Вернуться к дашборду (блок точек)</a>
+        </p>
         <div class="table-wrapper">
           <table class="data-table">
             <thead>
@@ -60,22 +77,27 @@
               <tr>
                 <td>{{ s.id }}</td>
                 <td>
-                  <form
-                    method="post"
-                    action="/shops/rename"
-                    class="inline-form"
-                  >
-                    <input type="hidden" name="shop_id" value="{{ s.id }}" />
-                    <input
-                      type="text"
-                      name="address"
-                      value="{{ s.address }}"
-                      class="text-input compact"
-                    />
-                    <button type="submit" class="ghost-button">
-                      Сохранить
-                    </button>
-                  </form>
+                  <div>
+                    <form
+                      method="post"
+                      action="/shops/rename"
+                      class="inline-form"
+                    >
+                      <input type="hidden" name="shop_id" value="{{ s.id }}" />
+                      <input
+                        type="text"
+                        name="address"
+                        value="{{ s.address }}"
+                        class="text-input compact"
+                      />
+                      <button type="submit" class="ghost-button">
+                        Сохранить
+                      </button>
+                    </form>
+                    <p class="summary-sub" style="margin: 0.25rem 0 0;">
+                      <a href="/shop/{{ s.id }}" class="table-link">Статистика по датам →</a>
+                    </p>
+                  </div>
                 </td>
                 <td>
                   {% if s.is_active %}
