@@ -14,7 +14,8 @@ from core.database import get_session
 from core.models.shift import Shift
 from core.models.shift_report import ShiftReport
 from core.models.shop import Shop
-from repositories import shop_repo, seller_repo
+from repositories import shop_repo, seller_repo, shift_repo
+from services import shift_service
 
 
 app = FastAPI(title="Trirechno Meat Dashboard")
@@ -30,6 +31,26 @@ def _parse_date(value: str | None) -> date:
         return datetime.strptime(value, "%Y-%m-%d").date()
     except ValueError:
         return date.today()
+
+
+async def _get_unclosed_shops_for_date(session: AsyncSession, target_date: date) -> list[Shop]:
+    """
+    Торговые точки, по которым за указанную дату ещё нет закрытой смены.
+    Аналог reminder_service.get_unclosed_shops_today, но с произвольной датой.
+    """
+    all_shops = await shop_repo.get_all_active_shops(session)
+    all_ids = {s.id for s in all_shops}
+    result = await session.execute(
+        select(Shift.shop_id)
+        .where(
+            Shift.shift_date == target_date,
+            Shift.status == "closed",
+        )
+        .distinct()
+    )
+    closed_ids = set(result.scalars().all())
+    unclosed_ids = all_ids - closed_ids
+    return [s for s in all_shops if s.id in unclosed_ids]
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -104,6 +125,7 @@ async def dashboard_index(
         {
             "request": request,
             "day": target_date,
+            "view": "dashboard",
             "cards": cards,
             "total_revenue": total_revenue,
             "shops_total": len(shops),
@@ -111,6 +133,90 @@ async def dashboard_index(
             "shops_closed": closed_count,
             "shops": shops,
             "sellers": sellers,
+        },
+    )
+
+
+@app.get("/online", response_class=HTMLResponse)
+async def dashboard_online(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    day: Optional[str] = Query(None, description="Дата в формате YYYY-MM-DD"),
+):
+    target_date = _parse_date(day)
+
+    active_shifts = await shift_service.get_active_shifts(session, for_date=target_date)
+    unclosed_shops = await _get_unclosed_shops_for_date(session, target_date)
+
+    return templates.TemplateResponse(
+        "online.html",
+        {
+            "request": request,
+            "day": target_date,
+            "view": "online",
+            "active_shifts": active_shifts,
+            "unclosed_shops": unclosed_shops,
+            "active_count": len(active_shifts),
+            "unclosed_count": len(unclosed_shops),
+        },
+    )
+
+
+@app.get("/reports", response_class=HTMLResponse)
+async def dashboard_reports(
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+    start: Optional[str] = Query(None, description="Начало периода YYYY-MM-DD"),
+    end: Optional[str] = Query(None, description="Конец периода YYYY-MM-DD"),
+):
+    start_date = _parse_date(start)
+    end_date = _parse_date(end) if end else start_date
+    if end_date < start_date:
+        start_date, end_date = end_date, start_date
+
+    result = await session.execute(
+        select(
+            Shift.shift_date,
+            func.coalesce(func.sum(ShiftReport.revenue), 0.0),
+            func.count(Shift.id),
+        )
+        .join(ShiftReport, ShiftReport.shift_id == Shift.id)
+        .where(
+            Shift.shift_date >= start_date,
+            Shift.shift_date <= end_date,
+            Shift.status == "closed",
+        )
+        .group_by(Shift.shift_date)
+        .order_by(Shift.shift_date)
+    )
+    rows = result.all()
+
+    daily = []
+    total_revenue = 0.0
+    total_shifts = 0
+    for d, revenue, count in rows:
+        revenue = float(revenue or 0.0)
+        count = int(count or 0)
+        daily.append(
+            {
+                "date": d,
+                "revenue": revenue,
+                "shifts_count": count,
+            }
+        )
+        total_revenue += revenue
+        total_shifts += count
+
+    return templates.TemplateResponse(
+        "reports.html",
+        {
+            "request": request,
+            "view": "reports",
+            "start_date": start_date,
+            "end_date": end_date,
+            "daily": daily,
+            "total_revenue": total_revenue,
+            "total_shifts": total_shifts,
         },
     )
 

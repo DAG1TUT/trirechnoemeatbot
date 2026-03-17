@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Онлайн — активные смены и точки</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="page">
+    <div class="page-gradient"></div>
+
+    <header class="shell header">
+      <div class="header-main">
+        <div class="header-left">
+          <div class="brand-mark">
+            <span class="brand-dot"></span>
+            <span class="brand-pulse"></span>
+          </div>
+          <div>
+            <h1 class="header-title">Онлайн — активные смены</h1>
+            <p class="header-subtitle">
+              Кто где работает сейчас и какие точки ещё без закрытой смены
+            </p>
+          </div>
+        </div>
+        <form method="get" class="header-right">
+          <label class="field-label">Дата</label>
+          <input
+            type="date"
+            name="day"
+            value="{{ day.strftime('%Y-%m-%d') }}"
+            class="date-input"
+          />
+          <button type="submit" class="primary-button">
+            <span class="button-dot"></span>
+            <span>Обновить</span>
+          </button>
+        </form>
+      </div>
+      <nav class="header-nav">
+        <a href="/" class="nav-link">Дашборд</a>
+        <a href="/online" class="nav-link nav-link-active">Онлайн</a>
+        <a href="/reports" class="nav-link">Отчёты</a>
+      </nav>
+    </header>
+
+    <main class="shell main">
+      <section class="summary-grid">
+        <div class="summary-card">
+          <p class="summary-label">Дата</p>
+          <p class="summary-value">
+            {{ day.strftime('%d.%m.%Y') }}
+          </p>
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Активные смены</p>
+          <p class="summary-value">
+            {{ active_count }}
+          </p>
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Незакрытые точки</p>
+          <p class="summary-value">
+            {{ unclosed_count }}
+          </p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">🟢 Активные смены (кто где)</h2>
+        {% if not active_shifts %}
+        <p class="summary-sub">Сейчас нет активных смен за выбранную дату.</p>
+        {% else %}
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Точка</th>
+                <th>Продавец</th>
+                <th>Время открытия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in active_shifts %}
+              <tr>
+                <td>{{ s.shop.address }}</td>
+                <td>{{ s.seller.full_name }}</td>
+                <td>
+                  {% if s.open_time %}
+                  {{ s.open_time.strftime('%H:%M') }}
+                  {% else %}—{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">⚠️ Незакрытые точки</h2>
+        {% if not unclosed_shops %}
+        <p class="summary-sub">
+          Все активные точки за выбранную дату имеют закрытую смену.
+        </p>
+        {% else %}
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Адрес</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for shop in unclosed_shops %}
+              <tr>
+                <td>{{ shop.id }}</td>
+                <td>{{ shop.address }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+  </html>
+

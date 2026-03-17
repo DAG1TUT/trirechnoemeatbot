@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Отчёты — по дате и за период</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="page">
+    <div class="page-gradient"></div>
+
+    <header class="shell header">
+      <div class="header-main">
+        <div class="header-left">
+          <div class="brand-mark">
+            <span class="brand-dot"></span>
+            <span class="brand-pulse"></span>
+          </div>
+          <div>
+            <h1 class="header-title">Отчёты по выручке</h1>
+            <p class="header-subtitle">
+              Отчёт за сегодня, за дату или за произвольный период
+            </p>
+          </div>
+        </div>
+        <form method="get" class="header-right">
+          <div>
+            <label class="field-label">Начало периода</label>
+            <input
+              type="date"
+              name="start"
+              value="{{ start_date.strftime('%Y-%m-%d') }}"
+              class="date-input"
+            />
+          </div>
+          <div>
+            <label class="field-label">Конец периода</label>
+            <input
+              type="date"
+              name="end"
+              value="{{ end_date.strftime('%Y-%m-%d') }}"
+              class="date-input"
+            />
+          </div>
+          <button type="submit" class="primary-button">
+            <span class="button-dot"></span>
+            <span>Показать</span>
+          </button>
+        </form>
+      </div>
+      <nav class="header-nav">
+        <a href="/" class="nav-link">Дашборд</a>
+        <a href="/online" class="nav-link">Онлайн</a>
+        <a href="/reports" class="nav-link nav-link-active">Отчёты</a>
+      </nav>
+    </header>
+
+    <main class="shell main">
+      <section class="summary-grid">
+        <div class="summary-card">
+          <p class="summary-label">Период</p>
+          <p class="summary-value">
+            {{ start_date.strftime('%d.%m.%Y') }} — {{ end_date.strftime('%d.%m.%Y') }}
+          </p>
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Всего смен</p>
+          <p class="summary-value">
+            {{ total_shifts }}
+          </p>
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Выручка за период</p>
+          <p class="summary-value">
+            {{ '{:,.0f}'.format(total_revenue).replace(',', ' ') }} ₽
+          </p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Отчёты по дням</h2>
+        {% if not daily %}
+        <p class="summary-sub">
+          Нет закрытых смен за выбранный период.
+        </p>
+        {% else %}
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Смен за день</th>
+                <th>Выручка за день</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in daily %}
+              <tr>
+                <td>{{ row.date.strftime('%d.%m.%Y') }}</td>
+                <td>{{ row.shifts_count }}</td>
+                <td>
+                  {{ '{:,.0f}'.format(row.revenue).replace(',', ' ') }} ₽
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+  </html>
+
