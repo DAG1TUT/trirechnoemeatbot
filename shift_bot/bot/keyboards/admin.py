@@ -33,6 +33,34 @@ def kb_admin_main() -> ReplyKeyboardMarkup:
     )
 
 
+def kb_admin_sellers_menu() -> ReplyKeyboardMarkup:
+    """Подменю управления продавцами."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="➕ Добавить продавца")],
+            [KeyboardButton(text="✏️ Переименовать продавца")],
+            [KeyboardButton(text="🚫 Отключить продавца")],
+            [KeyboardButton(text="✅ Включить продавца")],
+            [KeyboardButton(text="⬅️ Назад")],
+        ],
+        resize_keyboard=True,
+    )
+
+
+def kb_admin_shops_menu() -> ReplyKeyboardMarkup:
+    """Подменю управления торговыми точками."""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="➕ Добавить точку")],
+            [KeyboardButton(text="✏️ Переименовать точку")],
+            [KeyboardButton(text="🚫 Отключить точку")],
+            [KeyboardButton(text="✅ Включить точку")],
+            [KeyboardButton(text="⬅️ Назад")],
+        ],
+        resize_keyboard=True,
+    )
+
+
 def kb_seller_rating(seller_rows: list) -> InlineKeyboardMarkup:
     """Кнопки «провалиться в продавца» под рейтингом продавцов."""
     buttons = []

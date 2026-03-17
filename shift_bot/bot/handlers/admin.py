@@ -18,6 +18,8 @@ from bot.keyboards.admin import (
     kb_delete_choose_shop,
     kb_delete_choose_seller,
     kb_delete_confirm,
+    kb_admin_sellers_menu,
+    kb_admin_shops_menu,
 )
 from bot.store import LOGGED_OUT_ADMIN_IDS
 from services import shift_service, report_service, reminder_service
@@ -249,14 +251,6 @@ async def _format_sellers_list(session) -> str:
         status = "✅ активен" if s.is_active else "🚫 отключен"
         tg = f" (@{s.telegram_id})" if s.telegram_id else ""
         lines.append(f"{s.id}. {s.full_name}{tg} — {status}")
-    lines.append(
-        "\nКоманды управления продавцами:\n"
-        "• `+Имя` — добавить продавца (пример: `+Иван Иванов`)\n"
-        "• `id Новое имя` — переименовать (пример: `3 Пётр Петров`)\n"
-        "• `-id` — отключить продавца (пример: `-2`)\n"
-        "• `+id` — снова включить продавца (пример: `+2`)\n"
-        "Напишите /start, чтобы выйти в главное меню."
-    )
     return "\n".join(lines)
 
 
@@ -266,67 +260,205 @@ async def admin_manage_sellers_menu(message: Message, state: FSMContext, session
         return
     await state.set_state(AdminFSM.managing_sellers)
     text = await _format_sellers_list(session)
-    await message.answer(text)
+    await message.answer(
+        text + "\n\nВыберите действие:",
+        reply_markup=kb_admin_sellers_menu(),
+    )
 
 
 @router.message(AdminFSM.managing_sellers, F.text)
-async def admin_manage_sellers_input(message: Message, state: FSMContext, session, role, **kwargs):
+async def admin_manage_sellers_actions(message: Message, state: FSMContext, session, role, **kwargs):
     if not _admin_only(role):
         return
-    text = message.text.strip()
-    if text.lower() in {"/start", "выход", "назад"}:
+    text = (message.text or "").strip()
+    if text == "⬅️ Назад":
         await state.clear()
+        await message.answer("Возврат в главное меню.", reply_markup=kb_admin_main())
+        return
+    if text == "➕ Добавить продавца":
+        await state.set_state(AdminFSM.adding_seller_name)
+        await message.answer("Введите ФИО нового продавца:")
+        return
+    if text == "✏️ Переименовать продавца":
+        sellers = await seller_repo.get_all_sellers(session)
+        if not sellers:
+            await message.answer("Список продавцов пуст.")
+            return
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    text=f"{s.id}. {s.full_name[:30]}",
+                    callback_data=f"admin_seller_rename_{s.id}",
+                )
+            ]
+            for s in sellers
+        ]
+        buttons.append(
+            [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_seller_cancel")]
+        )
+        await state.set_state(AdminFSM.renaming_seller_choose)
         await message.answer(
-            "Возврат в главное меню.",
-            reply_markup=kb_admin_main(),
+            "Выберите продавца, которого нужно переименовать:",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+        )
+        return
+    if text == "🚫 Отключить продавца":
+        sellers = [s for s in await seller_repo.get_all_sellers(session) if s.is_active]
+        if not sellers:
+            await message.answer("Нет активных продавцов.")
+            return
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    text=f"{s.id}. {s.full_name[:30]}",
+                    callback_data=f"admin_seller_deactivate_{s.id}",
+                )
+            ]
+            for s in sellers
+        ]
+        buttons.append(
+            [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_seller_cancel")]
+        )
+        await message.answer(
+            "Выберите продавца, которого нужно отключить:",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+        )
+        return
+    if text == "✅ Включить продавца":
+        sellers = [s for s in await seller_repo.get_all_sellers(session) if not s.is_active]
+        if not sellers:
+            await message.answer("Нет отключённых продавцов.")
+            return
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    text=f"{s.id}. {s.full_name[:30]}",
+                    callback_data=f"admin_seller_activate_{s.id}",
+                )
+            ]
+            for s in sellers
+        ]
+        buttons.append(
+            [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_seller_cancel")]
+        )
+        await message.answer(
+            "Выберите продавца, которого нужно включить:",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
         )
         return
 
-    # Добавление нового продавца: +Имя (где после + есть пробел)
-    if text.startswith("+") and " " in text[1:]:
-        full_name = text[1:].strip()
-        if not full_name:
-            await message.answer("Укажите имя после '+', пример: `+Иван Иванов`.")
-        else:
-            await seller_repo.create_seller(session, full_name)
-            await message.answer("✅ Продавец добавлен.")
-        await message.answer(await _format_sellers_list(session))
-        return
 
-    # Отключение/включение продавца: -id или +id (без пробела)
-    if (text.startswith("-") or text.startswith("+")) and text[1:].strip().isdigit():
-        seller_id = int(text[1:].strip())
-        is_active = text.startswith("+")
-        seller = await seller_repo.set_seller_active(session, seller_id, is_active)
-        if not seller:
-            await message.answer("❌ Продавец с таким id не найден.")
-        else:
-            status = "активирован" if is_active else "отключён"
-            await message.answer(f"✅ Продавец {seller.full_name} {status}.")
-        await message.answer(await _format_sellers_list(session))
+@router.message(AdminFSM.adding_seller_name, F.text)
+async def admin_add_seller_name(message: Message, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
         return
-
-    # Переименование: id Новое имя
-    parts = text.split(maxsplit=1)
-    if len(parts) == 2 and parts[0].isdigit():
-        seller_id = int(parts[0])
-        new_name = parts[1].strip()
-        seller = await seller_repo.update_seller_name(session, seller_id, new_name)
-        if not seller:
-            await message.answer("❌ Продавец с таким id не найден.")
-        else:
-            await message.answer(f"✅ Имя продавца обновлено: {seller.full_name}.")
-        await message.answer(await _format_sellers_list(session))
+    full_name = (message.text or "").strip()
+    if not full_name:
+        await message.answer("Имя не может быть пустым. Введите ФИО продавца:")
         return
-
+    await seller_repo.create_seller(session, full_name)
+    await state.set_state(AdminFSM.managing_sellers)
+    text = await _format_sellers_list(session)
     await message.answer(
-        "Не удалось распознать команду.\n"
-        "Используйте один из форматов:\n"
-        "• `+Имя` — добавить продавца\n"
-        "• `id Новое имя` — переименовать\n"
-        "• `-id` — отключить продавца\n"
-        "• `+id` — включить продавца\n"
-        "Или напишите /start для выхода."
+        "✅ Продавец добавлен.\n\n" + text,
+        reply_markup=kb_admin_sellers_menu(),
+    )
+
+
+@router.callback_query(AdminFSM.renaming_seller_choose, F.data.startswith("admin_seller_rename_"))
+async def admin_rename_seller_choose(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    try:
+        seller_id = int(callback.data.replace("admin_seller_rename_", ""))
+    except ValueError:
+        await callback.answer()
+        return
+    await state.update_data(renaming_seller_id=seller_id)
+    await state.set_state(AdminFSM.renaming_seller_new_name)
+    await callback.answer()
+    await callback.message.edit_text("Введите новое ФИО для выбранного продавца:")
+
+
+@router.callback_query(F.data.startswith("admin_seller_deactivate_"))
+async def admin_deactivate_seller(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    try:
+        seller_id = int(callback.data.replace("admin_seller_deactivate_", ""))
+    except ValueError:
+        await callback.answer()
+        return
+    seller = await seller_repo.set_seller_active(session, seller_id, False)
+    await callback.answer()
+    if not seller:
+        await callback.message.edit_text("❌ Продавец с таким id не найден.")
+        return
+    text = await _format_sellers_list(session)
+    await callback.message.edit_text(
+        f"✅ Продавец {seller.full_name} отключён.\n\n" + text
+    )
+
+
+@router.callback_query(F.data.startswith("admin_seller_activate_"))
+async def admin_activate_seller(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    try:
+        seller_id = int(callback.data.replace("admin_seller_activate_", ""))
+    except ValueError:
+        await callback.answer()
+        return
+    seller = await seller_repo.set_seller_active(session, seller_id, True)
+    await callback.answer()
+    if not seller:
+        await callback.message.edit_text("❌ Продавец с таким id не найден.")
+        return
+    text = await _format_sellers_list(session)
+    await callback.message.edit_text(
+        f"✅ Продавец {seller.full_name} активирован.\n\n" + text
+    )
+
+
+@router.callback_query(F.data == "admin_seller_cancel")
+async def admin_seller_cancel(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    await state.set_state(AdminFSM.managing_sellers)
+    text = await _format_sellers_list(session)
+    await callback.message.edit_text(
+        text + "\n\nВыберите действие:",
+    )
+    await callback.answer()
+
+
+@router.message(AdminFSM.renaming_seller_new_name, F.text)
+async def admin_rename_seller_new_name(message: Message, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        return
+    data = await state.get_data()
+    seller_id = data.get("renaming_seller_id")
+    new_name = (message.text or "").strip()
+    if not seller_id:
+        await state.set_state(AdminFSM.managing_sellers)
+        await message.answer("Сессия сброшена. Начните заново.", reply_markup=kb_admin_sellers_menu())
+        return
+    if not new_name:
+        await message.answer("Имя не может быть пустым. Введите новое ФИО продавца:")
+        return
+    seller = await seller_repo.update_seller_name(session, seller_id, new_name)
+    await state.set_state(AdminFSM.managing_sellers)
+    if not seller:
+        await message.answer("❌ Продавец с таким id не найден.", reply_markup=kb_admin_sellers_menu())
+        return
+    text = await _format_sellers_list(session)
+    await message.answer(
+        f"✅ Имя продавца обновлено: {seller.full_name}.\n\n" + text,
+        reply_markup=kb_admin_sellers_menu(),
     )
 
 
@@ -338,14 +470,6 @@ async def _format_shops_list(session) -> str:
     for s in shops:
         status = "✅ активна" if s.is_active else "🚫 отключена"
         lines.append(f"{s.id}. {s.address} — {status}")
-    lines.append(
-        "\nКоманды управления точками:\n"
-        "• `+Адрес` — добавить точку (пример: `+ул. Новая, д. 1`)\n"
-        "• `id Новый адрес` — переименовать (пример: `2 ул. Пушкина, д. 5`)\n"
-        "• `-id` — отключить точку (пример: `-3`)\n"
-        "• `+id` — снова включить точку (пример: `+3`)\n"
-        "Напишите /start, чтобы выйти в главное меню."
-    )
     return "\n".join(lines)
 
 
@@ -355,67 +479,205 @@ async def admin_manage_shops_menu(message: Message, state: FSMContext, session, 
         return
     await state.set_state(AdminFSM.managing_shops)
     text = await _format_shops_list(session)
-    await message.answer(text)
+    await message.answer(
+        text + "\n\nВыберите действие:",
+        reply_markup=kb_admin_shops_menu(),
+    )
 
 
 @router.message(AdminFSM.managing_shops, F.text)
-async def admin_manage_shops_input(message: Message, state: FSMContext, session, role, **kwargs):
+async def admin_manage_shops_actions(message: Message, state: FSMContext, session, role, **kwargs):
     if not _admin_only(role):
         return
-    text = message.text.strip()
-    if text.lower() in {"/start", "выход", "назад"}:
+    text = (message.text or "").strip()
+    if text == "⬅️ Назад":
         await state.clear()
+        await message.answer("Возврат в главное меню.", reply_markup=kb_admin_main())
+        return
+    if text == "➕ Добавить точку":
+        await state.set_state(AdminFSM.adding_shop_address)
+        await message.answer("Введите адрес новой торговой точки:")
+        return
+    if text == "✏️ Переименовать точку":
+        shops = await shop_repo.get_all_shops(session)
+        if not shops:
+            await message.answer("Список торговых точек пуст.")
+            return
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    text=f"{s.id}. {s.address[:30]}",
+                    callback_data=f"admin_shop_rename_{s.id}",
+                )
+            ]
+            for s in shops
+        ]
+        buttons.append(
+            [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_shop_cancel")]
+        )
+        await state.set_state(AdminFSM.renaming_shop_choose)
         await message.answer(
-            "Возврат в главное меню.",
-            reply_markup=kb_admin_main(),
+            "Выберите точку, которую нужно переименовать:",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+        )
+        return
+    if text == "🚫 Отключить точку":
+        shops = [s for s in await shop_repo.get_all_shops(session) if s.is_active]
+        if not shops:
+            await message.answer("Нет активных торговых точек.")
+            return
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    text=f"{s.id}. {s.address[:30]}",
+                    callback_data=f"admin_shop_deactivate_{s.id}",
+                )
+            ]
+            for s in shops
+        ]
+        buttons.append(
+            [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_shop_cancel")]
+        )
+        await message.answer(
+            "Выберите точку, которую нужно отключить:",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+        )
+        return
+    if text == "✅ Включить точку":
+        shops = [s for s in await shop_repo.get_all_shops(session) if not s.is_active]
+        if not shops:
+            await message.answer("Нет отключённых торговых точек.")
+            return
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    text=f"{s.id}. {s.address[:30]}",
+                    callback_data=f"admin_shop_activate_{s.id}",
+                )
+            ]
+            for s in shops
+        ]
+        buttons.append(
+            [InlineKeyboardButton(text="❌ Отмена", callback_data="admin_shop_cancel")]
+        )
+        await message.answer(
+            "Выберите точку, которую нужно включить:",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
         )
         return
 
-    # Добавление новой точки: +Адрес (если после + есть пробел)
-    if text.startswith("+") and " " in text[1:]:
-        address = text[1:].strip()
-        if not address:
-            await message.answer("Укажите адрес после '+', пример: `+ул. Новая, д. 1`.")
-        else:
-            await shop_repo.create_shop(session, address)
-            await message.answer("✅ Торговая точка добавлена.")
-        await message.answer(await _format_shops_list(session))
-        return
 
-    # Отключение/включение точки: -id или +id
-    if (text.startswith("-") or text.startswith("+")) and text[1:].strip().isdigit():
-        shop_id = int(text[1:].strip())
-        is_active = text.startswith("+")
-        shop = await shop_repo.set_shop_active(session, shop_id, is_active)
-        if not shop:
-            await message.answer("❌ Точка с таким id не найдена.")
-        else:
-            status = "активирована" if is_active else "отключена"
-            await message.answer(f"✅ Точка «{shop.address}» {status}.")
-        await message.answer(await _format_shops_list(session))
+@router.message(AdminFSM.adding_shop_address, F.text)
+async def admin_add_shop_address(message: Message, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
         return
-
-    # Переименование: id Новый адрес
-    parts = text.split(maxsplit=1)
-    if len(parts) == 2 and parts[0].isdigit():
-        shop_id = int(parts[0])
-        new_address = parts[1].strip()
-        shop = await shop_repo.update_shop_address(session, shop_id, new_address)
-        if not shop:
-            await message.answer("❌ Точка с таким id не найдена.")
-        else:
-            await message.answer(f"✅ Адрес точки обновлён: {shop.address}.")
-        await message.answer(await _format_shops_list(session))
+    address = (message.text or "").strip()
+    if not address:
+        await message.answer("Адрес не может быть пустым. Введите адрес новой точки:")
         return
-
+    await shop_repo.create_shop(session, address)
+    await state.set_state(AdminFSM.managing_shops)
+    text = await _format_shops_list(session)
     await message.answer(
-        "Не удалось распознать команду.\n"
-        "Используйте один из форматов:\n"
-        "• `+Адрес` — добавить точку\n"
-        "• `id Новый адрес` — переименовать\n"
-        "• `-id` — отключить точку\n"
-        "• `+id` — включить точку\n"
-        "Или напишите /start для выхода."
+        "✅ Торговая точка добавлена.\n\n" + text,
+        reply_markup=kb_admin_shops_menu(),
+    )
+
+
+@router.callback_query(AdminFSM.renaming_shop_choose, F.data.startswith("admin_shop_rename_"))
+async def admin_rename_shop_choose(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    try:
+        shop_id = int(callback.data.replace("admin_shop_rename_", ""))
+    except ValueError:
+        await callback.answer()
+        return
+    await state.update_data(renaming_shop_id=shop_id)
+    await state.set_state(AdminFSM.renaming_shop_new_address)
+    await callback.answer()
+    await callback.message.edit_text("Введите новый адрес для выбранной точки:")
+
+
+@router.callback_query(F.data.startswith("admin_shop_deactivate_"))
+async def admin_deactivate_shop(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    try:
+        shop_id = int(callback.data.replace("admin_shop_deactivate_", ""))
+    except ValueError:
+        await callback.answer()
+        return
+    shop = await shop_repo.set_shop_active(session, shop_id, False)
+    await callback.answer()
+    if not shop:
+        await callback.message.edit_text("❌ Точка с таким id не найдена.")
+        return
+    text = await _format_shops_list(session)
+    await callback.message.edit_text(
+        f"✅ Точка «{shop.address}» отключена.\n\n" + text
+    )
+
+
+@router.callback_query(F.data.startswith("admin_shop_activate_"))
+async def admin_activate_shop(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    try:
+        shop_id = int(callback.data.replace("admin_shop_activate_", ""))
+    except ValueError:
+        await callback.answer()
+        return
+    shop = await shop_repo.set_shop_active(session, shop_id, True)
+    await callback.answer()
+    if not shop:
+        await callback.message.edit_text("❌ Точка с таким id не найдена.")
+        return
+    text = await _format_shops_list(session)
+    await callback.message.edit_text(
+        f"✅ Точка «{shop.address}» активирована.\n\n" + text
+    )
+
+
+@router.callback_query(F.data == "admin_shop_cancel")
+async def admin_shop_cancel(callback: CallbackQuery, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        await callback.answer()
+        return
+    await state.set_state(AdminFSM.managing_shops)
+    text = await _format_shops_list(session)
+    await callback.message.edit_text(
+        text + "\n\nВыберите действие:",
+    )
+    await callback.answer()
+
+
+@router.message(AdminFSM.renaming_shop_new_address, F.text)
+async def admin_rename_shop_new_address(message: Message, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        return
+    data = await state.get_data()
+    shop_id = data.get("renaming_shop_id")
+    new_address = (message.text or "").strip()
+    if not shop_id:
+        await state.set_state(AdminFSM.managing_shops)
+        await message.answer("Сессия сброшена. Начните заново.", reply_markup=kb_admin_shops_menu())
+        return
+    if not new_address:
+        await message.answer("Адрес не может быть пустым. Введите новый адрес точки:")
+        return
+    shop = await shop_repo.update_shop_address(session, shop_id, new_address)
+    await state.set_state(AdminFSM.managing_shops)
+    if not shop:
+        await message.answer("❌ Точка с таким id не найдена.", reply_markup=kb_admin_shops_menu())
+        return
+    text = await _format_shops_list(session)
+    await message.answer(
+        f"✅ Адрес точки обновлён: {shop.address}.\n\n" + text,
+        reply_markup=kb_admin_shops_menu(),
     )
 
 
