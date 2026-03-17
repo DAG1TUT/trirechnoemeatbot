@@ -52,3 +52,42 @@ async def unbind_seller_by_telegram_id(session: AsyncSession, telegram_id: int) 
     session.add(seller)
     await session.flush()
     return True
+
+
+async def get_all_sellers(session: AsyncSession) -> list[Seller]:
+    """Все продавцы (включая неактивных) для административного управления."""
+    result = await session.execute(select(Seller).order_by(Seller.id))
+    return list(result.scalars().all())
+
+
+async def create_seller(session: AsyncSession, full_name: str) -> Seller:
+    """Создать нового продавца."""
+    seller = Seller(full_name=full_name.strip(), is_active=True)
+    session.add(seller)
+    await session.flush()
+    await session.refresh(seller)
+    return seller
+
+
+async def update_seller_name(session: AsyncSession, seller_id: int, full_name: str) -> Seller | None:
+    """Обновить ФИО продавца."""
+    seller = await get_seller_by_id(session, seller_id)
+    if not seller:
+        return None
+    seller.full_name = full_name.strip()
+    session.add(seller)
+    await session.flush()
+    await session.refresh(seller)
+    return seller
+
+
+async def set_seller_active(session: AsyncSession, seller_id: int, is_active: bool) -> Seller | None:
+    """Активировать/деактивировать продавца."""
+    seller = await get_seller_by_id(session, seller_id)
+    if not seller:
+        return None
+    seller.is_active = is_active
+    session.add(seller)
+    await session.flush()
+    await session.refresh(seller)
+    return seller

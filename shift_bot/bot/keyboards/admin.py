@@ -22,6 +22,10 @@ def kb_admin_main() -> ReplyKeyboardMarkup:
             [KeyboardButton(text="📈 Рейтинг продавцов")],
             [KeyboardButton(text="📈 Рейтинг точек")],
             [KeyboardButton(text="⚠️ Незакрытые точки")],
+            [
+                KeyboardButton(text="👤 Продавцы"),
+                KeyboardButton(text="🏬 Торговые точки"),
+            ],
             [KeyboardButton(text="🗑 Удалить данные за дату")],
             [KeyboardButton(text="🚪 Выйти из режима администратора")],
         ],

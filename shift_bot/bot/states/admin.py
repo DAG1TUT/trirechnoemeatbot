@@ -6,6 +6,8 @@ class AdminFSM(StatesGroup):
     waiting_report_date = State()
     waiting_archive_period = State()
     waiting_delete_date = State()
+    managing_sellers = State()
+    managing_shops = State()
 
 
 class AdminLoginFSM(StatesGroup):

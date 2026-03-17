@@ -240,6 +240,185 @@ async def admin_history_date(message: Message, state: FSMContext, session, role,
     await message.answer(f"📅 Отчёт за {d.strftime('%d.%m.%Y')}:\n\n" + text)
 
 
+async def _format_sellers_list(session) -> str:
+    sellers = await seller_repo.get_all_sellers(session)
+    if not sellers:
+        return "Список продавцов пуст."
+    lines: list[str] = ["👤 Список продавцов:\n"]
+    for s in sellers:
+        status = "✅ активен" if s.is_active else "🚫 отключен"
+        tg = f" (@{s.telegram_id})" if s.telegram_id else ""
+        lines.append(f"{s.id}. {s.full_name}{tg} — {status}")
+    lines.append(
+        "\nКоманды управления продавцами:\n"
+        "• `+Имя` — добавить продавца (пример: `+Иван Иванов`)\n"
+        "• `id Новое имя` — переименовать (пример: `3 Пётр Петров`)\n"
+        "• `-id` — отключить продавца (пример: `-2`)\n"
+        "• `+id` — снова включить продавца (пример: `+2`)\n"
+        "Напишите /start, чтобы выйти в главное меню."
+    )
+    return "\n".join(lines)
+
+
+@router.message(F.text == "👤 Продавцы")
+async def admin_manage_sellers_menu(message: Message, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        return
+    await state.set_state(AdminFSM.managing_sellers)
+    text = await _format_sellers_list(session)
+    await message.answer(text)
+
+
+@router.message(AdminFSM.managing_sellers, F.text)
+async def admin_manage_sellers_input(message: Message, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        return
+    text = message.text.strip()
+    if text.lower() in {"/start", "выход", "назад"}:
+        await state.clear()
+        await message.answer(
+            "Возврат в главное меню.",
+            reply_markup=kb_admin_main(),
+        )
+        return
+
+    # Добавление нового продавца: +Имя (где после + есть пробел)
+    if text.startswith("+") and " " in text[1:]:
+        full_name = text[1:].strip()
+        if not full_name:
+            await message.answer("Укажите имя после '+', пример: `+Иван Иванов`.")
+        else:
+            await seller_repo.create_seller(session, full_name)
+            await message.answer("✅ Продавец добавлен.")
+        await message.answer(await _format_sellers_list(session))
+        return
+
+    # Отключение/включение продавца: -id или +id (без пробела)
+    if (text.startswith("-") or text.startswith("+")) and text[1:].strip().isdigit():
+        seller_id = int(text[1:].strip())
+        is_active = text.startswith("+")
+        seller = await seller_repo.set_seller_active(session, seller_id, is_active)
+        if not seller:
+            await message.answer("❌ Продавец с таким id не найден.")
+        else:
+            status = "активирован" if is_active else "отключён"
+            await message.answer(f"✅ Продавец {seller.full_name} {status}.")
+        await message.answer(await _format_sellers_list(session))
+        return
+
+    # Переименование: id Новое имя
+    parts = text.split(maxsplit=1)
+    if len(parts) == 2 and parts[0].isdigit():
+        seller_id = int(parts[0])
+        new_name = parts[1].strip()
+        seller = await seller_repo.update_seller_name(session, seller_id, new_name)
+        if not seller:
+            await message.answer("❌ Продавец с таким id не найден.")
+        else:
+            await message.answer(f"✅ Имя продавца обновлено: {seller.full_name}.")
+        await message.answer(await _format_sellers_list(session))
+        return
+
+    await message.answer(
+        "Не удалось распознать команду.\n"
+        "Используйте один из форматов:\n"
+        "• `+Имя` — добавить продавца\n"
+        "• `id Новое имя` — переименовать\n"
+        "• `-id` — отключить продавца\n"
+        "• `+id` — включить продавца\n"
+        "Или напишите /start для выхода."
+    )
+
+
+async def _format_shops_list(session) -> str:
+    shops = await shop_repo.get_all_shops(session)
+    if not shops:
+        return "Список торговых точек пуст."
+    lines: list[str] = ["🏬 Список торговых точек:\n"]
+    for s in shops:
+        status = "✅ активна" if s.is_active else "🚫 отключена"
+        lines.append(f"{s.id}. {s.address} — {status}")
+    lines.append(
+        "\nКоманды управления точками:\n"
+        "• `+Адрес` — добавить точку (пример: `+ул. Новая, д. 1`)\n"
+        "• `id Новый адрес` — переименовать (пример: `2 ул. Пушкина, д. 5`)\n"
+        "• `-id` — отключить точку (пример: `-3`)\n"
+        "• `+id` — снова включить точку (пример: `+3`)\n"
+        "Напишите /start, чтобы выйти в главное меню."
+    )
+    return "\n".join(lines)
+
+
+@router.message(F.text == "🏬 Торговые точки")
+async def admin_manage_shops_menu(message: Message, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        return
+    await state.set_state(AdminFSM.managing_shops)
+    text = await _format_shops_list(session)
+    await message.answer(text)
+
+
+@router.message(AdminFSM.managing_shops, F.text)
+async def admin_manage_shops_input(message: Message, state: FSMContext, session, role, **kwargs):
+    if not _admin_only(role):
+        return
+    text = message.text.strip()
+    if text.lower() in {"/start", "выход", "назад"}:
+        await state.clear()
+        await message.answer(
+            "Возврат в главное меню.",
+            reply_markup=kb_admin_main(),
+        )
+        return
+
+    # Добавление новой точки: +Адрес (если после + есть пробел)
+    if text.startswith("+") and " " in text[1:]:
+        address = text[1:].strip()
+        if not address:
+            await message.answer("Укажите адрес после '+', пример: `+ул. Новая, д. 1`.")
+        else:
+            await shop_repo.create_shop(session, address)
+            await message.answer("✅ Торговая точка добавлена.")
+        await message.answer(await _format_shops_list(session))
+        return
+
+    # Отключение/включение точки: -id или +id
+    if (text.startswith("-") or text.startswith("+")) and text[1:].strip().isdigit():
+        shop_id = int(text[1:].strip())
+        is_active = text.startswith("+")
+        shop = await shop_repo.set_shop_active(session, shop_id, is_active)
+        if not shop:
+            await message.answer("❌ Точка с таким id не найдена.")
+        else:
+            status = "активирована" if is_active else "отключена"
+            await message.answer(f"✅ Точка «{shop.address}» {status}.")
+        await message.answer(await _format_shops_list(session))
+        return
+
+    # Переименование: id Новый адрес
+    parts = text.split(maxsplit=1)
+    if len(parts) == 2 and parts[0].isdigit():
+        shop_id = int(parts[0])
+        new_address = parts[1].strip()
+        shop = await shop_repo.update_shop_address(session, shop_id, new_address)
+        if not shop:
+            await message.answer("❌ Точка с таким id не найдена.")
+        else:
+            await message.answer(f"✅ Адрес точки обновлён: {shop.address}.")
+        await message.answer(await _format_shops_list(session))
+        return
+
+    await message.answer(
+        "Не удалось распознать команду.\n"
+        "Используйте один из форматов:\n"
+        "• `+Адрес` — добавить точку\n"
+        "• `id Новый адрес` — переименовать\n"
+        "• `-id` — отключить точку\n"
+        "• `+id` — включить точку\n"
+        "Или напишите /start для выхода."
+    )
+
+
 def _parse_period(text: str) -> tuple[date | None, date | None]:
     """Парсит «ДД.ММ.ГГГГ - ДД.ММ.ГГГГ» или «ДД.ММ.ГГГГ-ДД.ММ.ГГГГ». Возвращает (start, end) или (None, None)."""
     s = (text or "").strip()
