@@ -114,6 +114,7 @@ body {
 }
 
 .brand-mark {
+  position: relative;
   flex-shrink: 0;
   width: 40px;
   height: 40px;
@@ -139,6 +140,7 @@ body {
   border-radius: inherit;
   border: 1px solid rgba(255, 255, 255, 0.4);
   opacity: 0.4;
+  pointer-events: none;
   animation: pulse-ring 2.6s ease-out infinite;
 }
 
