@@ -97,6 +97,8 @@ async def dashboard_index(
 
     closed_count = len(shops) - open_count
 
+    sellers = await seller_repo.get_all_sellers(session)
+
     return templates.TemplateResponse(
         "index.html",
         {
@@ -107,6 +109,8 @@ async def dashboard_index(
             "shops_total": len(shops),
             "shops_open": open_count,
             "shops_closed": closed_count,
+            "shops": shops,
+            "sellers": sellers,
         },
     )
 
@@ -134,7 +138,7 @@ async def dashboard_shops_add(
     address = (address or "").strip()
     if address:
         await shop_repo.create_shop(session, address)
-    return RedirectResponse(url="/shops", status_code=303)
+    return RedirectResponse(url="/", status_code=303)
 
 
 @app.post("/shops/rename")
@@ -144,7 +148,7 @@ async def dashboard_shops_rename(
     session: AsyncSession = Depends(get_session),
 ):
     await shop_repo.update_shop_address(session, shop_id, address)
-    return RedirectResponse(url="/shops", status_code=303)
+    return RedirectResponse(url="/", status_code=303)
 
 
 @app.post("/shops/toggle")
@@ -154,7 +158,7 @@ async def dashboard_shops_toggle(
     session: AsyncSession = Depends(get_session),
 ):
     await shop_repo.set_shop_active(session, shop_id, is_active)
-    return RedirectResponse(url="/shops", status_code=303)
+    return RedirectResponse(url="/", status_code=303)
 
 
 @app.get("/sellers", response_class=HTMLResponse)
@@ -180,7 +184,7 @@ async def dashboard_sellers_add(
     full_name = (full_name or "").strip()
     if full_name:
         await seller_repo.create_seller(session, full_name)
-    return RedirectResponse(url="/sellers", status_code=303)
+    return RedirectResponse(url="/", status_code=303)
 
 
 @app.post("/sellers/rename")
@@ -190,7 +194,7 @@ async def dashboard_sellers_rename(
     session: AsyncSession = Depends(get_session),
 ):
     await seller_repo.update_seller_name(session, seller_id, full_name)
-    return RedirectResponse(url="/sellers", status_code=303)
+    return RedirectResponse(url="/", status_code=303)
 
 
 @app.post("/sellers/toggle")
@@ -200,5 +204,5 @@ async def dashboard_sellers_toggle(
     session: AsyncSession = Depends(get_session),
 ):
     await seller_repo.set_seller_active(session, seller_id, is_active)
-    return RedirectResponse(url="/sellers", status_code=303)
+    return RedirectResponse(url="/", status_code=303)
 

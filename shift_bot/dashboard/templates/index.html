@@ -100,6 +100,162 @@
         </article>
         {% endfor %}
       </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Торговые точки</h2>
+        <form method="post" action="/shops/add" class="form-row">
+          <input
+            type="text"
+            name="address"
+            placeholder="Добавить новую точку — адрес"
+            class="text-input"
+            required
+          />
+          <button type="submit" class="primary-button">
+            <span class="button-dot"></span>
+            <span>Добавить точку</span>
+          </button>
+        </form>
+
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Адрес</th>
+                <th>Статус</th>
+                <th class="table-actions">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in shops %}
+              <tr>
+                <td>{{ s.id }}</td>
+                <td>
+                  <form method="post" action="/shops/rename" class="inline-form">
+                    <input type="hidden" name="shop_id" value="{{ s.id }}" />
+                    <input
+                      type="text"
+                      name="address"
+                      value="{{ s.address }}"
+                      class="text-input compact"
+                    />
+                    <button type="submit" class="ghost-button">
+                      Сохранить
+                    </button>
+                  </form>
+                </td>
+                <td>
+                  {% if s.is_active %}
+                  <span class="badge badge-open">активна</span>
+                  {% else %}
+                  <span class="badge badge-muted">отключена</span>
+                  {% endif %}
+                </td>
+                <td class="table-actions">
+                  <form method="post" action="/shops/toggle" class="inline-form">
+                    <input type="hidden" name="shop_id" value="{{ s.id }}" />
+                    {% if s.is_active %}
+                    <input type="hidden" name="is_active" value="false" />
+                    <button type="submit" class="danger-button">
+                      Отключить
+                    </button>
+                    {% else %}
+                    <input type="hidden" name="is_active" value="true" />
+                    <button type="submit" class="success-button">
+                      Включить
+                    </button>
+                    {% endif %}
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Продавцы</h2>
+        <form method="post" action="/sellers/add" class="form-row">
+          <input
+            type="text"
+            name="full_name"
+            placeholder="Добавить продавца — ФИО"
+            class="text-input"
+            required
+          />
+          <button type="submit" class="primary-button">
+            <span class="button-dot"></span>
+            <span>Добавить продавца</span>
+          </button>
+        </form>
+
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>ФИО</th>
+                <th>Статус</th>
+                <th class="table-actions">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in sellers %}
+              <tr>
+                <td>{{ s.id }}</td>
+                <td>
+                  <form
+                    method="post"
+                    action="/sellers/rename"
+                    class="inline-form"
+                  >
+                    <input type="hidden" name="seller_id" value="{{ s.id }}" />
+                    <input
+                      type="text"
+                      name="full_name"
+                      value="{{ s.full_name }}"
+                      class="text-input compact"
+                    />
+                    <button type="submit" class="ghost-button">
+                      Сохранить
+                    </button>
+                  </form>
+                </td>
+                <td>
+                  {% if s.is_active %}
+                  <span class="badge badge-open">активен</span>
+                  {% else %}
+                  <span class="badge badge-muted">отключен</span>
+                  {% endif %}
+                </td>
+                <td class="table-actions">
+                  <form
+                    method="post"
+                    action="/sellers/toggle"
+                    class="inline-form"
+                  >
+                    <input type="hidden" name="seller_id" value="{{ s.id }}" />
+                    {% if s.is_active %}
+                    <input type="hidden" name="is_active" value="false" />
+                    <button type="submit" class="danger-button">
+                      Отключить
+                    </button>
+                    {% else %}
+                    <input type="hidden" name="is_active" value="true" />
+                    <button type="submit" class="success-button">
+                      Включить
+                    </button>
+                    {% endif %}
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
   </body>
 </html>
