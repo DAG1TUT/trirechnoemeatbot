@@ -6,9 +6,9 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from shift_bot.config import DATABASE_URL
-from shift_bot.core.models.base import Base
-from shift_bot.core import models  # noqa: F401 — регистрация всех моделей в Base.metadata
+from config import DATABASE_URL
+from core.models.base import Base
+from core import models  # noqa: F401 — регистрация всех моделей в Base.metadata
 
 # echo=True для отладки SQL
 engine = create_async_engine(
