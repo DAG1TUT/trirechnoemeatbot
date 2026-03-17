@@ -46,11 +46,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 20;
-  padding-block: 1.1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
+  padding-block: 0.85rem 0.4rem;
   backdrop-filter: blur(18px);
   background: linear-gradient(
       to bottom,
@@ -66,6 +62,13 @@ body {
   display: flex;
   align-items: center;
   gap: 0.9rem;
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
 }
 
 .brand-mark {
@@ -130,6 +133,35 @@ body {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+.header-nav {
+  margin-top: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.nav-link {
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  text-decoration: none;
+  color: rgba(148, 163, 184, 0.96);
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.nav-link:hover {
+  background: rgba(30, 64, 175, 0.6);
+  color: #e5e7eb;
+  border-color: rgba(129, 140, 248, 0.9);
+}
+
+.nav-link-active {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(148, 163, 184, 0.9);
+  color: #e5e7eb;
 }
 
 .field-label {

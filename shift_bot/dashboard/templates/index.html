@@ -10,34 +10,41 @@
     <div class="page-gradient"></div>
 
     <header class="shell header">
-      <div class="header-left">
-        <div class="brand-mark">
-          <span class="brand-dot"></span>
-          <span class="brand-pulse"></span>
+      <div class="header-main">
+        <div class="header-left">
+          <div class="brand-mark">
+            <span class="brand-dot"></span>
+            <span class="brand-pulse"></span>
+          </div>
+          <div>
+            <h1 class="header-title">Отчёты торговых точек</h1>
+            <p class="header-subtitle">
+              Состояние всех точек и выручка за выбранный день
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 class="header-title">Отчёты торговых точек</h1>
-          <p class="header-subtitle">
-            Состояние всех точек и выручка за выбранный день
-          </p>
-        </div>
+        <form method="get" class="header-right">
+          <label class="field-label">Дата</label>
+          <input
+            type="date"
+            name="day"
+            value="{{ day.strftime('%Y-%m-%d') }}"
+            class="date-input"
+          />
+          <button type="submit" class="primary-button">
+            <span class="button-dot"></span>
+            <span>Обновить</span>
+          </button>
+        </form>
       </div>
-      <form method="get" class="header-right">
-        <label class="field-label">Дата</label>
-        <input
-          type="date"
-          name="day"
-          value="{{ day.strftime('%Y-%m-%d') }}"
-          class="date-input"
-        />
-        <button type="submit" class="primary-button">
-          <span class="button-dot"></span>
-          <span>Обновить</span>
-        </button>
-      </form>
+      <nav class="header-nav">
+        <a href="#top" class="nav-link nav-link-active">Дашборд</a>
+        <a href="#shops-section" class="nav-link">Точки</a>
+        <a href="#sellers-section" class="nav-link">Продавцы</a>
+      </nav>
     </header>
 
-    <main class="shell main">
+    <main class="shell main" id="top">
       <section class="summary-grid">
         <div class="summary-card">
           <p class="summary-label">Дата</p>
@@ -101,7 +108,7 @@
         {% endfor %}
       </section>
 
-      <section class="panel">
+      <section class="panel" id="shops-section">
         <h2 class="panel-title">Торговые точки</h2>
         <form method="post" action="/shops/add" class="form-row">
           <input
@@ -175,7 +182,7 @@
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="sellers-section">
         <h2 class="panel-title">Продавцы</h2>
         <form method="post" action="/sellers/add" class="form-row">
           <input
