@@ -17,3 +17,6 @@ aiohttp>=3.9.0
 SQLAlchemy[asyncio]==2.0.36
 aiosqlite==0.20.0
 asyncpg>=0.29.0
+fastapi
+uvicorn
+jinja2
