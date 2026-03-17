@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from core.database import get_session
 from core.models.shift import Shift
@@ -279,10 +280,23 @@ async def dashboard_shop_detail(
         start_date = end_date - timedelta(days=89)
     if end_date < start_date:
         start_date, end_date = end_date, start_date
-    shifts = await shift_repo.get_closed_shifts_in_date_range(
-        session, start_date, end_date
+    # Запрос без зависимости от shift_repo.get_closed_shifts_in_date_range (его может не быть в корневом репо)
+    result = await session.execute(
+        select(Shift)
+        .options(
+            selectinload(Shift.seller),
+            selectinload(Shift.shop),
+            selectinload(Shift.report),
+        )
+        .where(
+            Shift.shop_id == shop_id,
+            Shift.status == "closed",
+            Shift.shift_date >= start_date,
+            Shift.shift_date <= end_date,
+        )
+        .order_by(Shift.shift_date.desc(), Shift.close_time.desc())
     )
-    shop_shifts = [s for s in shifts if s.shop_id == shop_id]
+    shop_shifts = list(result.scalars().all())
     by_date: dict[date, list] = {}
     for s in shop_shifts:
         d = s.shift_date
