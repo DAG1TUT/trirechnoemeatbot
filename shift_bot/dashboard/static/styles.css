@@ -834,6 +834,27 @@ body {
 }
 
 /* ——— Веб-кабинет продавца ——— */
+.seller-auth-main {
+  max-width: 28rem;
+  margin-inline: auto;
+  padding-top: 2.5rem;
+  padding-bottom: 2rem;
+}
+
+.seller-auth-panel {
+  padding: 1.35rem 1.5rem;
+}
+
+.seller-auth-panel .header-title {
+  margin-top: 0;
+  font-size: 1.35rem;
+}
+
+.seller-auth-panel .header-subtitle {
+  margin-bottom: 0;
+  line-height: 1.45;
+}
+
 .seller-error {
   color: var(--danger);
   background: var(--danger-bg);
@@ -854,8 +875,51 @@ body {
   text-decoration: underline;
 }
 
+/* Форма: вертикальная колонка (не наследовать flex:1 от .text-input в .form-row) */
 .seller-form {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  align-items: stretch;
+  gap: 0;
+  margin-top: 1rem;
+}
+
+.seller-form .field-label {
+  display: block;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.seller-form .field-label:first-child {
+  margin-top: 0;
+}
+
+.seller-form .text-input,
+.seller-form select.text-input {
+  width: 100%;
+  max-width: 100%;
+  flex: none;
+  display: block;
+  box-sizing: border-box;
+}
+
+.seller-form select.text-input {
+  cursor: pointer;
+  appearance: auto;
+  -webkit-appearance: menulist;
+}
+
+.seller-form .primary-button {
+  margin-top: 1.35rem !important;
+  width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+  border-radius: var(--radius-sm);
+}
+
+.seller-auth-footer {
+  margin-top: 1.35rem;
+  padding-top: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }

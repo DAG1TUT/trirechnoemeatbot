@@ -8,10 +8,10 @@
   </head>
   <body class="page">
     <div class="page-gradient"></div>
-    <main class="shell main" style="max-width: 480px; padding-top: 3rem">
-      <section class="panel">
-        <h1 class="header-title" style="margin-bottom: 0.5rem">Вход для продавца</h1>
-        <p class="header-subtitle" style="margin-bottom: 1.25rem">
+    <main class="shell main seller-auth-main">
+      <section class="panel seller-auth-panel">
+        <h1 class="header-title">Вход для продавца</h1>
+        <p class="header-subtitle" style="margin-top: 0.5rem; margin-bottom: 0">
           Укажите ваш номер в системе (ID) и пароль, заданный при регистрации.
         </p>
         {% if error %}
@@ -35,16 +35,16 @@
             required
             autocomplete="current-password"
           />
-          <button type="submit" class="primary-button" style="margin-top: 0.75rem">
+          <button type="submit" class="primary-button">
             <span class="button-dot"></span>
             <span>Войти</span>
           </button>
         </form>
-        <p style="margin-top: 1.25rem; font-size: 0.85rem; color: rgba(148, 163, 184, 0.95)">
+        <p class="seller-auth-footer">
           Нет аккаунта?
           <a href="/seller-cabinet/register" class="seller-link">Регистрация по ФИО из списка</a>
         </p>
-        <p style="margin-top: 0.75rem">
+        <p class="seller-auth-footer" style="margin-top: 0.5rem">
           <a href="/" class="seller-link">← Админ-дашборд</a>
         </p>
       </section>

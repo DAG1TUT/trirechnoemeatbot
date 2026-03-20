@@ -8,10 +8,10 @@
   </head>
   <body class="page">
     <div class="page-gradient"></div>
-    <main class="shell main" style="max-width: 520px; padding-top: 2rem">
-      <section class="panel">
-        <h1 class="header-title" style="margin-bottom: 0.5rem">Регистрация</h1>
-        <p class="header-subtitle" style="margin-bottom: 1rem">
+    <main class="shell main seller-auth-main">
+      <section class="panel seller-auth-panel">
+        <h1 class="header-title">Регистрация</h1>
+        <p class="header-subtitle" style="margin-top: 0.5rem; margin-bottom: 0">
           Выберите своё ФИО из списка (его создаёт администратор), задайте пароль.
         </p>
         {% if error %}
@@ -48,13 +48,13 @@
             minlength="6"
             autocomplete="new-password"
           />
-          <button type="submit" class="primary-button" style="margin-top: 0.75rem">
+          <button type="submit" class="primary-button">
             <span class="button-dot"></span>
             <span>Зарегистрироваться</span>
           </button>
         </form>
         {% endif %}
-        <p style="margin-top: 1.25rem">
+        <p class="seller-auth-footer">
           <a href="/seller-cabinet/login" class="seller-link">Уже есть аккаунт — войти</a>
         </p>
       </section>
