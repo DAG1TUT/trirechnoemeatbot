@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Вход в админ-панель</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="page">
+    <div class="page-gradient"></div>
+    <main class="shell main seller-auth-main">
+      <section class="panel seller-auth-panel">
+        <h1 class="header-title">Админ-панель</h1>
+        <p class="header-subtitle" style="margin-top: 0.5rem; margin-bottom: 0">
+          Пароль тот же, что для кнопки «Администратор» в Telegram-боте (переменная окружения ADMIN_PASSWORD на сервере).
+        </p>
+        {% if error %}
+        <p class="seller-error">{{ error }}</p>
+        {% endif %}
+        <form method="post" action="/admin/login" class="seller-form">
+          <input type="hidden" name="next" value="{{ next }}" />
+          <label class="field-label">Пароль</label>
+          <input
+            type="password"
+            name="password"
+            class="text-input"
+            required
+            autocomplete="current-password"
+            autofocus
+          />
+          <button type="submit" class="primary-button">
+            <span class="button-dot"></span>
+            <span>Войти</span>
+          </button>
+        </form>
+        <p class="seller-auth-footer">
+          <a href="/" class="seller-link">← К выбору входа</a>
+          <span style="margin: 0 0.5rem; color: var(--text-muted)">·</span>
+          <a href="/seller-cabinet/login" class="seller-link">Кабинет продавца</a>
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

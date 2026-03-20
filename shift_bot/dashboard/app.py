@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -20,11 +21,17 @@ from repositories import shop_repo, seller_repo, shift_repo, daily_report_status
 from services import shift_service, report_service
 from starlette.middleware.sessions import SessionMiddleware
 
+from shift_bot.dashboard.admin_auth_middleware import (
+    ADMIN_SESSION_KEY,
+    AdminAuthMiddleware,
+    safe_next_url,
+)
 from shift_bot.dashboard.seller_cabinet import router as seller_cabinet_router
 
 
 app = FastAPI(title="Trirechno Meat Dashboard")
 
+# SessionMiddleware добавлен первым → внешний слой: сессия доступна во всех следующих middleware.
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv(
@@ -35,6 +42,7 @@ app.add_middleware(
     max_age=60 * 60 * 24 * 14,
     same_site="lax",
 )
+app.add_middleware(AdminAuthMiddleware)
 app.include_router(seller_cabinet_router)
 
 app.mount("/static", StaticFiles(directory="shift_bot/dashboard/static"), name="static")
@@ -42,6 +50,55 @@ templates = Jinja2Templates(directory="shift_bot/dashboard/templates")
 
 # Главная страница дашборда (админка); корень "/" — выбор роли (portal.html)
 ADMIN_HOME = "/dashboard"
+
+
+def _dashboard_admin_password() -> str:
+    """Тот же пароль, что для кнопки «Администратор» в боте (shift_bot/config: ADMIN_PASSWORD)."""
+    return (os.getenv("ADMIN_PASSWORD") or "admin").strip()
+
+
+@app.get("/admin/login", response_class=HTMLResponse)
+async def admin_login_get(
+    request: Request,
+    next: str = Query("/dashboard"),
+):
+    """Форма входа в админ-панель (пароль из ADMIN_PASSWORD)."""
+    next_ok = safe_next_url(next, ADMIN_HOME)
+    if request.session.get(ADMIN_SESSION_KEY):
+        return RedirectResponse(url=next_ok, status_code=303)
+    return templates.TemplateResponse(
+        "admin_login.html",
+        {"request": request, "error": None, "next": next_ok},
+    )
+
+
+@app.post("/admin/login")
+async def admin_login_post(
+    request: Request,
+    password: str = Form(...),
+    next: str = Form("/dashboard"),
+):
+    next_ok = safe_next_url(next, ADMIN_HOME)
+    expected = _dashboard_admin_password().encode("utf-8")
+    given = (password or "").strip().encode("utf-8")
+    if len(expected) == 0 or not secrets.compare_digest(given, expected):
+        return templates.TemplateResponse(
+            "admin_login.html",
+            {
+                "request": request,
+                "error": "Неверный пароль",
+                "next": next_ok,
+            },
+            status_code=401,
+        )
+    request.session[ADMIN_SESSION_KEY] = True
+    return RedirectResponse(url=next_ok, status_code=303)
+
+
+@app.post("/admin/logout")
+async def admin_logout(request: Request):
+    request.session.pop(ADMIN_SESSION_KEY, None)
+    return RedirectResponse(url="/", status_code=303)
 
 
 def _parse_date(value: str | None) -> date:

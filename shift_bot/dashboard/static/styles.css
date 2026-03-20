@@ -1041,6 +1041,35 @@ body {
   }
 }
 
+/* Кнопка «Выйти» в навигации админки */
+.header-nav-inline-form {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  vertical-align: middle;
+}
+
+.header-nav-inline-form .nav-link-logout {
+  margin: 0;
+  padding: 0.35rem 0.65rem;
+  min-height: 36px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-soft);
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.header-nav-inline-form .nav-link-logout:hover {
+  background: var(--accent-light);
+  border-color: rgba(13, 148, 136, 0.35);
+  color: var(--accent);
+}
+
 /* Форма: вертикальная колонка (не наследовать flex:1 от .text-input в .form-row) */
 .seller-form {
   display: flex;
