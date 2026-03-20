@@ -905,6 +905,142 @@ body {
   }
 }
 
+/* ——— Стартовая страница выбора роли (/) ——— */
+.portal-main {
+  max-width: 52rem;
+  margin-inline: auto;
+  padding-top: 2.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.portal-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.portal-brand-mark {
+  margin: 0 auto 1.25rem;
+}
+
+.portal-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+@media (min-width: 640px) {
+  .portal-title {
+    font-size: 1.65rem;
+  }
+}
+
+.portal-subtitle {
+  margin: 0 auto;
+  max-width: 36rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-soft);
+}
+
+.portal-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .portal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+.portal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 1.35rem 1.4rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+}
+
+.portal-card:hover {
+  border-color: rgba(13, 148, 136, 0.35);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.portal-card-admin:hover {
+  background: linear-gradient(160deg, #ffffff 0%, rgba(13, 148, 136, 0.06) 100%);
+}
+
+.portal-card-seller:hover {
+  background: linear-gradient(160deg, #ffffff 0%, rgba(59, 130, 246, 0.06) 100%);
+}
+
+.portal-card-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+  margin-bottom: 0.65rem;
+}
+
+.portal-card-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.portal-card-text {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-soft);
+  flex: 1;
+}
+
+.portal-card-cta {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.portal-card-seller .portal-card-cta {
+  color: #2563eb;
+}
+
+.portal-footer {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.portal-footer-sep {
+  margin: 0 0.35rem;
+  opacity: 0.6;
+}
+
+.portal-footer-hint {
+  display: inline;
+}
+
+@media (max-width: 639px) {
+  .portal-footer-hint {
+    display: block;
+    margin-top: 0.35rem;
+  }
+}
+
 /* Форма: вертикальная колонка (не наследовать flex:1 от .text-input в .form-row) */
 .seller-form {
   display: flex;

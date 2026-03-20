@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Вход — Trirechno Meat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="page">
+    <div class="page-gradient"></div>
+    <main class="shell main portal-main">
+      <header class="portal-header">
+        <div class="brand-mark portal-brand-mark">
+          <span class="brand-dot"></span>
+          <span class="brand-pulse"></span>
+        </div>
+        <h1 class="portal-title">Куда вам сейчас?</h1>
+        <p class="portal-subtitle">
+          Выберите роль: дашборд для руководителя или кабинет продавца (вход по ID и паролю).
+        </p>
+      </header>
+
+      <div class="portal-grid">
+        <a href="/dashboard" class="portal-card portal-card-admin">
+          <span class="portal-card-icon" aria-hidden="true">📊</span>
+          <h2 class="portal-card-title">Админ-панель</h2>
+          <p class="portal-card-text">
+            Сводка по точкам, выручка, график смен, отчёты, продавцы и настройки — для руководителя и администратора.
+          </p>
+          <span class="portal-card-cta">Открыть дашборд →</span>
+        </a>
+
+        <a href="/seller-cabinet/login" class="portal-card portal-card-seller">
+          <span class="portal-card-icon" aria-hidden="true">🌐</span>
+          <h2 class="portal-card-title">Кабинет продавца</h2>
+          <p class="portal-card-text">
+            Вход по номеру в системе (ID) и паролю. Если веб-аккаунта ещё нет — сначала регистрация по ФИО из списка.
+          </p>
+          <span class="portal-card-cta">Войти в кабинет →</span>
+        </a>
+      </div>
+
+      <p class="portal-footer">
+        <a href="/seller-cabinet/register" class="seller-link">Регистрация продавца</a>
+        <span class="portal-footer-sep">·</span>
+        <span class="portal-footer-hint">если админ добавил вас в список, но веб-пароль ещё не задан</span>
+      </p>
+    </main>
+  </body>
+</html>

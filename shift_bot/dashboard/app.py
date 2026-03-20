@@ -40,6 +40,9 @@ app.include_router(seller_cabinet_router)
 app.mount("/static", StaticFiles(directory="shift_bot/dashboard/static"), name="static")
 templates = Jinja2Templates(directory="shift_bot/dashboard/templates")
 
+# Главная страница дашборда (админка); корень "/" — выбор роли (portal.html)
+ADMIN_HOME = "/dashboard"
+
 
 def _parse_date(value: str | None) -> date:
     if not value:
@@ -71,6 +74,15 @@ async def _get_unclosed_shops_for_date(session: AsyncSession, target_date: date)
 
 
 @app.get("/", response_class=HTMLResponse)
+async def portal_entry(request: Request):
+    """Стартовая страница: выбор админ-панели или кабинета продавца."""
+    return templates.TemplateResponse(
+        "portal.html",
+        {"request": request},
+    )
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_index(
     request: Request,
     session: AsyncSession = Depends(get_session),
@@ -420,7 +432,7 @@ async def dashboard_seller_detail(
     """Детализация по продавцу: все смены (дата, точка, выручка)."""
     seller = await seller_repo.get_seller_by_id(session, seller_id)
     if not seller:
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url=ADMIN_HOME, status_code=303)
     result = await session.execute(
         select(Shift)
         .options(
@@ -458,7 +470,7 @@ async def dashboard_shop_detail(
     """Статистика и все данные по датам для одной точки."""
     shop = await shop_repo.get_shop_by_id(session, shop_id)
     if not shop:
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url=ADMIN_HOME, status_code=303)
     end_date = _parse_date(end)
     start_date = _parse_date(start)
     if not start:
@@ -623,7 +635,7 @@ async def dashboard_sellers_bind_telegram(
     """Привязать или отвязать Telegram ID у продавца. Пустое значение — отвязка."""
     seller = await seller_repo.get_seller_by_id(session, seller_id)
     if not seller:
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(url=ADMIN_HOME, status_code=303)
     raw = (telegram_id or "").strip()
     if not raw:
         seller.telegram_id = None

@@ -42,7 +42,9 @@ ALTER TABLE sellers ADD COLUMN IF NOT EXISTS web_password_hash VARCHAR(255);
 
 Файл с тем же текстом: `scripts/migrations/add_sellers_web_password_hash.sql`.
 
-Вход продавца: `https://<твой-хост>/seller-cabinet/login`, регистрация по ФИО из списка: `/seller-cabinet/register` (в списке только продавцы **без** уже заданного веб-пароля).
+- Стартовая страница (выбор роли): `https://<твой-хост>/` — админ-панель или кабинет продавца.
+- Дашборд руководителя: `https://<твой-хост>/dashboard`
+- Вход продавца: `/seller-cabinet/login`, регистрация по ФИО из списка: `/seller-cabinet/register` (в списке только продавцы **без** уже заданного веб-пароля).
 
 ## 3. После деплоя
 
