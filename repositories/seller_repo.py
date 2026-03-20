@@ -3,7 +3,7 @@
 """
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.models.seller import Seller
@@ -76,6 +76,43 @@ async def set_seller_active(session: AsyncSession, seller_id: int, is_active: bo
     if not seller:
         return None
     seller.is_active = is_active
+    session.add(seller)
+    await session.flush()
+    await session.refresh(seller)
+    return seller
+
+
+async def get_sellers_available_for_web_registration(session: AsyncSession) -> list[Seller]:
+    """Активные продавцы без веб-пароля — можно выбрать при регистрации на сайте."""
+    result = await session.execute(
+        select(Seller)
+        .where(
+            Seller.is_active.is_(True),
+            or_(Seller.web_password_hash.is_(None), Seller.web_password_hash == ""),
+        )
+        .order_by(Seller.id)
+    )
+    return list(result.scalars().all())
+
+
+async def set_web_password_hash(session: AsyncSession, seller_id: int, password_hash: str) -> Seller | None:
+    """Установить хэш пароля для веб-кабинета."""
+    seller = await get_seller_by_id(session, seller_id)
+    if not seller or not seller.is_active:
+        return None
+    seller.web_password_hash = password_hash
+    session.add(seller)
+    await session.flush()
+    await session.refresh(seller)
+    return seller
+
+
+async def clear_web_password(session: AsyncSession, seller_id: int) -> Seller | None:
+    """Сбросить веб-вход (отвязать сайт от продавца)."""
+    seller = await get_seller_by_id(session, seller_id)
+    if not seller:
+        return None
+    seller.web_password_hash = None
     session.add(seller)
     await session.flush()
     await session.refresh(seller)

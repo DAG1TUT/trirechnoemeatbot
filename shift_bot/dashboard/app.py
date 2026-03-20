@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -17,9 +18,24 @@ from core.models.shift_report import ShiftReport
 from core.models.shop import Shop
 from repositories import shop_repo, seller_repo, shift_repo, daily_report_status_repo
 from services import shift_service, report_service
+from starlette.middleware.sessions import SessionMiddleware
+
+from shift_bot.dashboard.seller_cabinet import router as seller_cabinet_router
 
 
 app = FastAPI(title="Trirechno Meat Dashboard")
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv(
+        "SELLER_WEB_SESSION_SECRET",
+        "change-me-set-SELLER_WEB_SESSION_SECRET-in-production",
+    ),
+    session_cookie="seller_cabinet",
+    max_age=60 * 60 * 24 * 14,
+    same_site="lax",
+)
+app.include_router(seller_cabinet_router)
 
 app.mount("/static", StaticFiles(directory="shift_bot/dashboard/static"), name="static")
 templates = Jinja2Templates(directory="shift_bot/dashboard/templates")

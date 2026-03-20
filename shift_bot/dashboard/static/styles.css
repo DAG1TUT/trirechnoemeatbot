@@ -832,3 +832,30 @@ body {
 .brand-link:hover .header-subtitle {
   color: var(--text-soft);
 }
+
+/* ——— Веб-кабинет продавца ——— */
+.seller-error {
+  color: var(--danger);
+  background: var(--danger-bg);
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.seller-link {
+  color: var(--link);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.seller-link:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+.seller-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

@@ -18,6 +18,7 @@ class Seller(Base, TimestampMixin):
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     telegram_id: Mapped[Optional[int]] = mapped_column(BigInteger, unique=True, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    web_password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # relationships
     shifts: Mapped[list["Shift"]] = relationship("Shift", back_populates="seller")

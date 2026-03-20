@@ -28,6 +28,22 @@
 
 - `ADMIN_PASSWORD` — пароль для входа по кнопке «Администратор» (по умолчанию `admin`).
 
+**Веб-кабинет продавца** (если поднимаешь FastAPI-дашборд рядом с ботом):
+
+| Переменная | Описание |
+|------------|----------|
+| `SELLER_WEB_SESSION_SECRET` | Случайная строка для подписи cookie-сессии входа продавца на сайте. **Задай в продакшене** (иначе используется небезопасный дефолт из кода). |
+
+Если база **PostgreSQL уже существовала** до появления веб-кабинета, один раз выполни в SQL (Query в Railway PostgreSQL или `psql`):
+
+```sql
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS web_password_hash VARCHAR(255);
+```
+
+Файл с тем же текстом: `scripts/migrations/add_sellers_web_password_hash.sql`.
+
+Вход продавца: `https://<твой-хост>/seller-cabinet/login`, регистрация по ФИО из списка: `/seller-cabinet/register` (в списке только продавцы **без** уже заданного веб-пароля).
+
 ## 3. После деплоя
 
 1. Открой бота в Telegram и отправь `/start`.
