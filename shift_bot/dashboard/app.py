@@ -53,7 +53,13 @@ ADMIN_HOME = "/dashboard"
 
 
 def _dashboard_admin_password() -> str:
-    """Тот же пароль, что для кнопки «Администратор» в боте (shift_bot/config: ADMIN_PASSWORD)."""
+    """
+    Пароль только для веб-админки: DASHBOARD_ADMIN_PASSWORD.
+    Если не задан — для совместимости со старыми деплоями берётся ADMIN_PASSWORD (пароль бота).
+    """
+    dash = (os.getenv("DASHBOARD_ADMIN_PASSWORD") or "").strip()
+    if dash:
+        return dash
     return (os.getenv("ADMIN_PASSWORD") or "admin").strip()
 
 
@@ -62,7 +68,7 @@ async def admin_login_get(
     request: Request,
     next: str = Query("/dashboard"),
 ):
-    """Форма входа в админ-панель (пароль из ADMIN_PASSWORD)."""
+    """Форма входа в админ-панель (пароль: DASHBOARD_ADMIN_PASSWORD или fallback ADMIN_PASSWORD)."""
     next_ok = safe_next_url(next, ADMIN_HOME)
     if request.session.get(ADMIN_SESSION_KEY):
         return RedirectResponse(url=next_ok, status_code=303)
