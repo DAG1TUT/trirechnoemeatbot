@@ -31,7 +31,9 @@ from shift_bot.dashboard.seller_cabinet import router as seller_cabinet_router
 
 app = FastAPI(title="Trirechno Meat Dashboard")
 
-# SessionMiddleware добавлен первым → внешний слой: сессия доступна во всех следующих middleware.
+# В Starlette последний add_middleware выполняется первым для запроса.
+# Сначала AdminAuth (внутренний), затем Session (внешний) — сессия уже в scope, когда вызывается AdminAuth.
+app.add_middleware(AdminAuthMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv(
@@ -42,7 +44,6 @@ app.add_middleware(
     max_age=60 * 60 * 24 * 14,
     same_site="lax",
 )
-app.add_middleware(AdminAuthMiddleware)
 app.include_router(seller_cabinet_router)
 
 app.mount("/static", StaticFiles(directory="shift_bot/dashboard/static"), name="static")

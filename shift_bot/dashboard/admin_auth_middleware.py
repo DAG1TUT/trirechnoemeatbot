@@ -37,8 +37,8 @@ def safe_next_url(raw: str | None, default: str) -> str:
 
 class AdminAuthMiddleware(BaseHTTPMiddleware):
     """
-    В app.add_middleware: сначала SessionMiddleware, затем этот класс
-    (Session снаружи — сессия уже есть, когда запрос доходит сюда).
+    В app.add_middleware: этот класс регистрируют РАНЬШЕ SessionMiddleware,
+    чтобы SessionMiddleware был внешним и заполнял request.session до dispatch здесь.
     """
 
     async def dispatch(self, request: Request, call_next) -> Response:
