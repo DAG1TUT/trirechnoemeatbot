@@ -5,7 +5,7 @@ import secrets
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from fastapi import Depends, FastAPI, Query, Request, Form
+from fastapi import APIRouter, Depends, FastAPI, Query, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -21,9 +21,9 @@ from repositories import shop_repo, seller_repo, shift_repo, daily_report_status
 from services import shift_service, report_service
 from starlette.middleware.sessions import SessionMiddleware
 
-from shift_bot.dashboard.admin_auth_middleware import (
+from shift_bot.dashboard.admin_deps import (
     ADMIN_SESSION_KEY,
-    AdminAuthMiddleware,
+    require_admin_dashboard,
     safe_next_url,
 )
 from shift_bot.dashboard.seller_cabinet import router as seller_cabinet_router
@@ -31,9 +31,6 @@ from shift_bot.dashboard.seller_cabinet import router as seller_cabinet_router
 
 app = FastAPI(title="Trirechno Meat Dashboard")
 
-# В Starlette последний add_middleware выполняется первым для запроса.
-# Сначала AdminAuth (внутренний), затем Session (внешний) — сессия уже в scope, когда вызывается AdminAuth.
-app.add_middleware(AdminAuthMiddleware)
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv(
@@ -45,6 +42,8 @@ app.add_middleware(
     same_site="lax",
 )
 app.include_router(seller_cabinet_router)
+
+admin_router = APIRouter(dependencies=[Depends(require_admin_dashboard)])
 
 app.mount("/static", StaticFiles(directory="shift_bot/dashboard/static"), name="static")
 templates = Jinja2Templates(directory="shift_bot/dashboard/templates")
@@ -146,7 +145,7 @@ async def portal_entry(request: Request):
     )
 
 
-@app.get("/dashboard", response_class=HTMLResponse)
+@admin_router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_index(
     request: Request,
     session: AsyncSession = Depends(get_session),
@@ -230,7 +229,7 @@ async def dashboard_index(
     )
 
 
-@app.get("/schedule", response_class=HTMLResponse)
+@admin_router.get("/schedule", response_class=HTMLResponse)
 async def dashboard_schedule(
     request: Request,
     session: AsyncSession = Depends(get_session),
@@ -261,7 +260,7 @@ async def dashboard_schedule(
     )
 
 
-@app.get("/online", response_class=HTMLResponse)
+@admin_router.get("/online", response_class=HTMLResponse)
 async def dashboard_online(
     request: Request,
     session: AsyncSession = Depends(get_session),
@@ -286,7 +285,7 @@ async def dashboard_online(
     )
 
 
-@app.get("/reports", response_class=HTMLResponse)
+@admin_router.get("/reports", response_class=HTMLResponse)
 async def dashboard_reports(
     request: Request,
     session: AsyncSession = Depends(get_session),
@@ -345,7 +344,7 @@ async def dashboard_reports(
     )
 
 
-@app.get("/report/day", response_class=HTMLResponse)
+@admin_router.get("/report/day", response_class=HTMLResponse)
 async def dashboard_report_day(
     request: Request,
     session: AsyncSession = Depends(get_session),
@@ -371,7 +370,7 @@ async def dashboard_report_day(
     )
 
 
-@app.post("/report/day/mark-sent")
+@admin_router.post("/report/day/mark-sent")
 async def dashboard_report_day_mark_sent(
     day: str = Form(...),
     session: AsyncSession = Depends(get_session),
@@ -400,7 +399,7 @@ async def _get_all_closed_shifts_with_report(session: AsyncSession) -> list:
     return list(result.scalars().all())
 
 
-@app.get("/ratings", response_class=HTMLResponse)
+@admin_router.get("/ratings", response_class=HTMLResponse)
 async def dashboard_ratings_index(request: Request):
     """Страница выбора: рейтинг продавцов или рейтинг точек."""
     return templates.TemplateResponse(
@@ -409,7 +408,7 @@ async def dashboard_ratings_index(request: Request):
     )
 
 
-@app.get("/ratings/sellers", response_class=HTMLResponse)
+@admin_router.get("/ratings/sellers", response_class=HTMLResponse)
 async def dashboard_ratings_sellers(
     request: Request,
     session: AsyncSession = Depends(get_session),
@@ -448,7 +447,7 @@ async def dashboard_ratings_sellers(
     )
 
 
-@app.get("/ratings/shops", response_class=HTMLResponse)
+@admin_router.get("/ratings/shops", response_class=HTMLResponse)
 async def dashboard_ratings_shops(
     request: Request,
     session: AsyncSession = Depends(get_session),
@@ -487,7 +486,7 @@ async def dashboard_ratings_shops(
     )
 
 
-@app.get("/seller/{seller_id:int}", response_class=HTMLResponse)
+@admin_router.get("/seller/{seller_id:int}", response_class=HTMLResponse)
 async def dashboard_seller_detail(
     request: Request,
     seller_id: int,
@@ -523,7 +522,7 @@ async def dashboard_seller_detail(
     )
 
 
-@app.get("/shop/{shop_id:int}", response_class=HTMLResponse)
+@admin_router.get("/shop/{shop_id:int}", response_class=HTMLResponse)
 async def dashboard_shop_detail(
     request: Request,
     shop_id: int,
@@ -598,7 +597,7 @@ async def dashboard_shop_detail(
     )
 
 
-@app.get("/shops", response_class=HTMLResponse)
+@admin_router.get("/shops", response_class=HTMLResponse)
 async def dashboard_shops(
     request: Request,
     session: AsyncSession = Depends(get_session),
@@ -613,7 +612,7 @@ async def dashboard_shops(
     )
 
 
-@app.post("/shops/add")
+@admin_router.post("/shops/add")
 async def dashboard_shops_add(
     address: str = Form(...),
     session: AsyncSession = Depends(get_session),
@@ -624,7 +623,7 @@ async def dashboard_shops_add(
     return RedirectResponse(url="/shops", status_code=303)
 
 
-@app.post("/shops/rename")
+@admin_router.post("/shops/rename")
 async def dashboard_shops_rename(
     shop_id: int = Form(...),
     address: str = Form(...),
@@ -634,7 +633,7 @@ async def dashboard_shops_rename(
     return RedirectResponse(url="/shops", status_code=303)
 
 
-@app.post("/shops/toggle")
+@admin_router.post("/shops/toggle")
 async def dashboard_shops_toggle(
     shop_id: int = Form(...),
     is_active: bool = Form(...),
@@ -644,7 +643,7 @@ async def dashboard_shops_toggle(
     return RedirectResponse(url="/shops", status_code=303)
 
 
-@app.get("/sellers", response_class=HTMLResponse)
+@admin_router.get("/sellers", response_class=HTMLResponse)
 async def dashboard_sellers(
     request: Request,
     session: AsyncSession = Depends(get_session),
@@ -659,7 +658,7 @@ async def dashboard_sellers(
     )
 
 
-@app.post("/sellers/add")
+@admin_router.post("/sellers/add")
 async def dashboard_sellers_add(
     full_name: str = Form(...),
     session: AsyncSession = Depends(get_session),
@@ -670,7 +669,7 @@ async def dashboard_sellers_add(
     return RedirectResponse(url="/sellers", status_code=303)
 
 
-@app.post("/sellers/rename")
+@admin_router.post("/sellers/rename")
 async def dashboard_sellers_rename(
     seller_id: int = Form(...),
     full_name: str = Form(...),
@@ -680,7 +679,7 @@ async def dashboard_sellers_rename(
     return RedirectResponse(url="/sellers", status_code=303)
 
 
-@app.post("/sellers/toggle")
+@admin_router.post("/sellers/toggle")
 async def dashboard_sellers_toggle(
     seller_id: int = Form(...),
     is_active: bool = Form(...),
@@ -690,7 +689,7 @@ async def dashboard_sellers_toggle(
     return RedirectResponse(url="/sellers", status_code=303)
 
 
-@app.post("/sellers/bind-telegram")
+@admin_router.post("/sellers/bind-telegram")
 async def dashboard_sellers_bind_telegram(
     seller_id: int = Form(...),
     telegram_id: Optional[str] = Form(None),
@@ -713,3 +712,5 @@ async def dashboard_sellers_bind_telegram(
             pass
     return RedirectResponse(url="/sellers", status_code=303)
 
+
+app.include_router(admin_router)

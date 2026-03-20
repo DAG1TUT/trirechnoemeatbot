@@ -43,7 +43,8 @@
 ALTER TABLE sellers ADD COLUMN IF NOT EXISTS web_password_hash VARCHAR(255);
 ```
 
-Файл с тем же текстом: `scripts/migrations/add_sellers_web_password_hash.sql`.
+Файл с тем же текстом: `scripts/migrations/add_sellers_web_password_hash.sql`.  
+Подробности и проверка: **`scripts/migrations/README.md`**. С локального компьютера (если установлен `psql`): `bash scripts/migrations/apply_web_password_column.sh` при заданном `DATABASE_URL`.
 
 - Стартовая страница (выбор роли): `https://<твой-хост>/`
 - Вход в админ-панель (пароль): `/admin/login` → затем дашборд `/dashboard`
