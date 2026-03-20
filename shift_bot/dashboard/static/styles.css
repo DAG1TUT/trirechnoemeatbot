@@ -875,6 +875,36 @@ body {
   text-decoration: underline;
 }
 
+.seller-link:visited {
+  color: var(--link);
+}
+
+/* Главная страница кабинета продавца */
+.seller-cabinet-main {
+  padding-top: 0.5rem;
+}
+
+.seller-cabinet-card .panel-title {
+  margin-bottom: 0.65rem;
+}
+
+.seller-cabinet-lead {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-soft);
+}
+
+.seller-cabinet-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 767px) {
+  .seller-cabinet-actions {
+    justify-content: flex-start;
+  }
+}
+
 /* Форма: вертикальная колонка (не наследовать flex:1 от .text-input в .form-row) */
 .seller-form {
   display: flex;

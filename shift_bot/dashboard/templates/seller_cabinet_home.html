@@ -9,33 +9,40 @@
   <body class="page">
     <div class="page-gradient"></div>
     <header class="shell header">
-      <div class="header-left">
-        <div class="brand-mark">
-          <span class="brand-dot"></span>
-          <span class="brand-pulse"></span>
+      <div class="header-main">
+        <div class="header-left">
+          <div class="brand-mark">
+            <span class="brand-dot"></span>
+            <span class="brand-pulse"></span>
+          </div>
+          <div>
+            <h1 class="header-title">Кабинет продавца</h1>
+            <p class="header-subtitle">{{ seller.full_name }} · ID {{ seller.id }}</p>
+          </div>
         </div>
-        <div>
-          <h1 class="header-title">Кабинет продавца</h1>
-          <p class="header-subtitle">{{ seller.full_name }} · ID {{ seller.id }}</p>
+        <div class="header-right seller-cabinet-actions">
+          <form method="post" action="/seller-cabinet/logout">
+            <button type="submit" class="ghost-button">Выйти</button>
+          </form>
+          <form
+            method="post"
+            action="/seller-cabinet/unbind"
+            onsubmit="return confirm('Сбросить веб-вход? Потом можно снова зарегистрироваться по списку ФИО.');"
+          >
+            <button type="submit" class="danger-button">Отвязать веб-аккаунт</button>
+          </form>
         </div>
       </div>
-      <div class="header-right" style="gap: 0.5rem; flex-wrap: wrap">
-        <form method="post" action="/seller-cabinet/logout" style="display: inline">
-          <button type="submit" class="ghost-button">Выйти</button>
-        </form>
-        <form method="post" action="/seller-cabinet/unbind" style="display: inline" onsubmit="return confirm('Сбросить веб-вход? Потом можно снова зарегистрироваться по списку ФИО.');">
-          <button type="submit" class="danger-button">Отвязать веб-аккаунт</button>
-        </form>
-      </div>
+      <p class="breadcrumb">Кабинет продавца</p>
     </header>
-    <main class="shell main">
-      <section class="panel">
+    <main class="shell main seller-cabinet-main">
+      <section class="panel seller-cabinet-card">
         <h2 class="panel-title">Дальше</h2>
-        <p class="header-subtitle" style="margin-bottom: 0.75rem">
+        <p class="seller-cabinet-lead">
           Здесь будет открытие смены, отчёт и закрытие — как в Telegram-боте. Сейчас доступны вход, выход и отвязка учётки.
         </p>
-        <p class="header-subtitle">
-          <a href="/" class="seller-link">Админ-дашборд</a>
+        <p class="seller-auth-footer" style="margin-top: 1rem; margin-bottom: 0">
+          <a href="/" class="seller-link">← Админ-дашборд</a>
         </p>
       </section>
     </main>
