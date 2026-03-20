@@ -36,12 +36,50 @@
       <p class="breadcrumb">Кабинет продавца</p>
     </header>
     <main class="shell main seller-cabinet-main">
+      {% if flash %}
+      <p class="seller-flash seller-flash-success">{{ flash }}</p>
+      {% endif %}
+      {% if error %}
+      <p class="seller-flash seller-flash-error">{{ error }}</p>
+      {% endif %}
+
+      {% if current_shift %}
       <section class="panel seller-cabinet-card">
-        <h2 class="panel-title">Дальше</h2>
-        <p class="seller-cabinet-lead">
-          Здесь будет открытие смены, отчёт и закрытие — как в Telegram-боте. Сейчас доступны вход, выход и отвязка учётки.
+        <h2 class="panel-title">Текущая смена</h2>
+        <p class="seller-cabinet-lead" style="margin-bottom: 0.75rem">
+          Точка: <strong>{{ current_shift.shop.address }}</strong><br />
+          Дата: {{ current_shift.shift_date.strftime("%d.%m.%Y") }} · смена № {{ current_shift.id }}
         </p>
-        <p class="seller-auth-footer" style="margin-top: 1rem; margin-bottom: 0">
+        <p style="margin: 0 0 1rem; font-size: 0.9rem; color: var(--text-soft)">
+          Закройте смену и введите отчёт — те же поля, что в Telegram-боте.
+        </p>
+        <a href="/seller-cabinet/shift/close" class="primary-button" style="display: inline-block; text-align: center; text-decoration: none; padding: 0.6rem 1rem">Закрыть смену и отчёт</a>
+      </section>
+      {% else %}
+      <section class="panel seller-cabinet-card">
+        <h2 class="panel-title">Открыть смену</h2>
+        <p class="seller-cabinet-lead">
+          Выберите торговую точку и нажмите «Открыть смену». Пока смена открыта, другую точку открыть нельзя — сначала закройте текущую.
+        </p>
+        {% if shops %}
+        <form method="post" action="/seller-cabinet/shift/open" class="seller-form">
+          <label class="field-label" for="shop_id">Торговая точка</label>
+          <select id="shop_id" name="shop_id" class="text-input" required>
+            {% for s in shops %}
+            <option value="{{ s.id }}">{{ s.address }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="primary-button">Открыть смену</button>
+        </form>
+        {% else %}
+        <p class="seller-cabinet-lead" style="margin-top: 0.75rem">Нет активных торговых точек в системе. Обратитесь к администратору.</p>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      <section class="panel seller-cabinet-card" style="margin-top: 1rem">
+        <h2 class="panel-title">Навигация</h2>
+        <p class="seller-auth-footer" style="margin-top: 0; margin-bottom: 0">
           <a href="/" class="seller-link">← К выбору входа</a>
           <span style="margin: 0 0.5rem; color: var(--text-muted)">·</span>
           <a href="/dashboard" class="seller-link">Админ-дашборд</a>

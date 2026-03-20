@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Закрытие смены</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="page">
+    <div class="page-gradient"></div>
+    <header class="shell header">
+      <div class="header-main">
+        <div class="header-left">
+          <div class="brand-mark">
+            <span class="brand-dot"></span>
+            <span class="brand-pulse"></span>
+          </div>
+          <div>
+            <h1 class="header-title">Закрытие смены</h1>
+            <p class="header-subtitle">{{ seller.full_name }} · {{ shift.shop.address }}</p>
+          </div>
+        </div>
+        <div class="header-right seller-cabinet-actions">
+          <form method="post" action="/seller-cabinet/logout">
+            <button type="submit" class="ghost-button">Выйти</button>
+          </form>
+        </div>
+      </div>
+      <p class="breadcrumb"><a href="/seller-cabinet/home" class="seller-link">Кабинет продавца</a> · отчёт</p>
+    </header>
+    <main class="shell main seller-cabinet-main">
+      {% if error %}
+      <p class="seller-flash seller-flash-error">{{ error }}</p>
+      {% endif %}
+
+      <section class="panel seller-cabinet-card">
+        <h2 class="panel-title">Отчёт за смену</h2>
+        <p class="seller-cabinet-lead" style="margin-bottom: 1rem">
+          Дата: {{ shift.shift_date.strftime("%d.%m.%Y") }} · смена № {{ shift.id }}<br />
+          {% if is_grocery %}
+          <span class="seller-badge">Продуктовая точка</span> — отдельно мясо и магазин, затем терминал и наличные от выручки.
+          {% else %}
+          Выручка считается как <strong>терминал + наличные от выручки</strong> (после прихода).
+          {% endif %}
+        </p>
+
+        <form method="post" action="/seller-cabinet/shift/close" class="seller-form">
+          <input type="hidden" name="shift_id" value="{{ shift.id }}" />
+
+          <label class="field-label" for="receipts">Приход</label>
+          <input type="text" id="receipts" name="receipts" class="text-input" value="0" inputmode="decimal" autocomplete="off" />
+
+          {% if is_grocery %}
+          <label class="field-label" for="revenue_meat">Выручка по мясу</label>
+          <input type="text" id="revenue_meat" name="revenue_meat" class="text-input" placeholder="0" inputmode="decimal" autocomplete="off" required />
+
+          <label class="field-label" for="revenue_store">Выручка по магазину</label>
+          <input type="text" id="revenue_store" name="revenue_store" class="text-input" placeholder="0" inputmode="decimal" autocomplete="off" required />
+          {% endif %}
+
+          <label class="field-label" for="terminal_revenue">Выручка по терминалу</label>
+          <input type="text" id="terminal_revenue" name="terminal_revenue" class="text-input" value="0" inputmode="decimal" autocomplete="off" required />
+
+          <label class="field-label" for="cash_revenue">Выручка наличными (от продаж)</label>
+          <input type="text" id="cash_revenue" name="cash_revenue" class="text-input" value="0" inputmode="decimal" autocomplete="off" required />
+
+          <label class="field-label" for="cash_balance">Остаток наличных</label>
+          <input type="text" id="cash_balance" name="cash_balance" class="text-input" inputmode="decimal" autocomplete="off" required />
+
+          <label class="field-label" for="stock_balance">Остаток товара</label>
+          <input type="text" id="stock_balance" name="stock_balance" class="text-input" inputmode="decimal" autocomplete="off" required />
+
+          <label class="field-label" for="expenses">Расходы / списания</label>
+          <input type="text" id="expenses" name="expenses" class="text-input" inputmode="decimal" autocomplete="off" required />
+
+          <label class="field-label" for="surrender_amount">Сдаю (к сдаче)</label>
+          <input type="text" id="surrender_amount" name="surrender_amount" class="text-input" value="0" inputmode="decimal" autocomplete="off" />
+
+          <label class="field-label" for="comment">Комментарий</label>
+          <input type="text" id="comment" name="comment" class="text-input" placeholder="—" autocomplete="off" />
+
+          <button type="submit" class="primary-button">Сохранить отчёт и закрыть смену</button>
+        </form>
+
+        <p class="seller-auth-footer" style="margin-top: 1.25rem; margin-bottom: 0">
+          <a href="/seller-cabinet/home" class="seller-link">← Назад в кабинет</a>
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

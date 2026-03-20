@@ -895,6 +895,37 @@ body {
   color: var(--text-soft);
 }
 
+.seller-flash {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.seller-flash-success {
+  color: var(--success);
+  background: var(--success-bg);
+  border: 1px solid rgba(5, 150, 105, 0.25);
+}
+
+.seller-flash-error {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid rgba(220, 38, 38, 0.22);
+}
+
+.seller-badge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-light);
+  border-radius: 999px;
+}
+
 .seller-cabinet-actions {
   justify-content: flex-end;
 }
