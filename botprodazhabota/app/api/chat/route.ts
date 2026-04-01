@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
+import { prisma } from '@/lib/prisma';
 
 function getClient() {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY ?? '' });
@@ -19,7 +20,11 @@ const DEFAULT_PROMPT = `Ты — умный AI-ассистент для VK-со
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { message, systemPrompt } = body as { message: string; systemPrompt?: string };
+  const { message, systemPrompt: inlinePrompt, apiKey } = body as {
+    message: string;
+    systemPrompt?: string;
+    apiKey?: string;
+  };
 
   if (!message || typeof message !== 'string') {
     return new Response(JSON.stringify({ error: 'Invalid message' }), {
@@ -28,7 +33,23 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const finalPrompt = systemPrompt?.trim() || DEFAULT_PROMPT;
+  // 1. If apiKey provided — fetch system prompt from DB
+  let finalPrompt = inlinePrompt?.trim() || DEFAULT_PROMPT;
+
+  if (apiKey) {
+    try {
+      const client = await prisma.client.findUnique({
+        where: { apiKey, isActive: true },
+        select: { systemPrompt: true },
+      });
+      if (client?.systemPrompt) {
+        finalPrompt = client.systemPrompt;
+      }
+    } catch (e) {
+      console.error('[chat] DB lookup failed:', e);
+      // fall through to default
+    }
+  }
 
   if (!process.env.OPENAI_API_KEY) {
     const fallback = 'Добрый день! Я помогу ответить на ваши вопросы о нашем заведении. Спросите о меню, ценах или условиях доставки.';
