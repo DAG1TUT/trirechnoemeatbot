@@ -1,0 +1,116 @@
+.section {
+  position:relative; z-index:1; padding:100px 5vw;
+  background: linear-gradient(180deg, #EBEBF2 0%, #E8E9F1 100%);
+  contain: layout style;
+  @media(max-width:768px){padding:72px 20px}
+}
+
+.inner  { max-width:860px; margin:0 auto; }
+
+.heading { text-align:center; margin-bottom:48px; }
+
+.eyebrow {
+  font-size:.70rem; font-weight:600; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--accent); margin-bottom:12px;
+}
+
+.title {
+  font-size:clamp(1.9rem,3.5vw,3rem); font-weight:800;
+  letter-spacing:-.025em; text-transform:uppercase;
+  color:var(--text-primary); margin-bottom:12px;
+  font-family:'Inter',sans-serif;
+}
+
+.desc {
+  font-size:.90rem; color:var(--text-secondary); line-height:1.65;
+  font-weight:400; max-width:560px; margin:0 auto;
+}
+
+/* ── Glass card ─────────────────────────────────────────────────── */
+.card {
+  background:rgba(255,255,255,.80);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.92);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,1), 0 12px 40px rgba(0,0,0,.08);
+  border-radius:22px; padding:36px 40px;
+  display:flex; flex-direction:column; gap:24px;
+  contain:layout style paint; transform:translateZ(0);
+  @media(max-width:640px){padding:24px 20px}
+}
+
+.field { display:flex; flex-direction:column; gap:10px; }
+
+.labelRow {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;
+}
+
+.label {
+  font-size:.74rem; font-weight:600; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--text-secondary);
+}
+
+/* ── Business type chips ──────────────────────────────────────────── */
+.types {
+  display:flex; flex-wrap:wrap; gap:8px;
+}
+
+.typeBtn {
+  padding:7px 14px; border-radius:var(--r-full);
+  font-size:.80rem; font-weight:500;
+  background:rgba(255,255,255,.65);
+  border:1px solid rgba(170,175,210,.30);
+  color:var(--text-secondary); cursor:pointer;
+  transition:background .18s, border-color .18s, color .18s, transform .18s;
+  &:hover{background:rgba(255,255,255,.90);color:var(--text-primary);transform:translateY(-1px)}
+}
+
+.typeBtn.active {
+  background:var(--accent); border-color:var(--accent);
+  color:#fff; box-shadow:0 4px 14px var(--accent-dim);
+}
+
+/* ── Text inputs ──────────────────────────────────────────────────── */
+.input, .textarea {
+  width:100%; border:1px solid rgba(160,165,210,.30); border-radius:12px;
+  padding:11px 14px; font-size:.875rem; font-family:inherit; font-weight:400;
+  line-height:1.5; background:rgba(255,255,255,.65); color:var(--text-primary);
+  outline:none; transition:border-color .18s, box-shadow .18s;
+  &::placeholder{color:var(--text-ghost)}
+  &:focus{border-color:rgba(61,111,187,.42);box-shadow:0 0 0 3px rgba(61,111,187,.07)}
+}
+
+.textarea { resize:vertical; min-height:100px; }
+
+.autoBtn {
+  font-size:.70rem; font-weight:600; color:var(--accent);
+  background:var(--accent-dim); border:1px solid rgba(61,111,187,.22);
+  border-radius:var(--r-full); padding:4px 12px; cursor:pointer;
+  transition:background .18s, transform .18s;
+  &:hover{background:rgba(61,111,187,.20);transform:translateY(-1px)}
+}
+
+/* ── Footer ───────────────────────────────────────────────────────── */
+.footer {
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  padding-top:4px;
+}
+
+.applyBtn {
+  padding:13px 40px; border-radius:var(--r-md);
+  background:var(--text-primary); color:#fff;
+  font-size:.82rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  border:none; cursor:pointer;
+  transition:transform .2s var(--ease-glass), background .25s, box-shadow .2s;
+  box-shadow:0 4px 18px rgba(12,12,20,.16); will-change:transform;
+  &:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(12,12,20,.22)}
+  &:active{transform:translateY(0)}
+}
+
+.applyBtn.success {
+  background:#16a34a;
+  box-shadow:0 4px 18px rgba(22,163,74,.24);
+}
+
+.hint {
+  font-size:.72rem; color:var(--text-ghost); text-align:center;
+}

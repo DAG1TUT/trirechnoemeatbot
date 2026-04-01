@@ -1,0 +1,135 @@
+/* ── Shared glass material ────────────────────────────────────────── */
+.card {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.88);
+  box-shadow: var(--card-shadow);
+  border-radius: 18px;
+  transform: translateZ(0);
+  contain: layout style paint;
+}
+
+/* ── Keyframes — only transform, only compositor ─────────────────── */
+@keyframes fa { 0%,100%{transform:translateY(0) translateZ(0)} 50%{transform:translateY(-9px) translateZ(0)} }
+@keyframes fb { 0%,100%{transform:translateY(-5px) translateZ(0)} 50%{transform:translateY(5px) translateZ(0)} }
+@keyframes gr { from{transform:rotate(0deg) translateZ(0)} to{transform:rotate(360deg) translateZ(0)} }
+@keyframes gp { 0%,100%{opacity:.55;transform:scale(1) translateZ(0)} 50%{opacity:.9;transform:scale(1.2) translateZ(0)} }
+
+/* ── LEFT cluster ─────────────────────────────────────────────────── */
+.left {
+  position:relative; width:190px; height:420px; flex-shrink:0;
+  @media(max-width:860px){display:none}
+}
+
+.moleculeCard {
+  composes: card;
+  position:absolute; top:10px; left:8px;
+  width:120px; height:120px;
+  display:flex; align-items:center; justify-content:center;
+  animation: fa 5s ease-in-out infinite;
+  transform: perspective(480px) rotateY(16deg) rotateX(-4deg) translateZ(0);
+}
+
+.vkCard {
+  composes: card;
+  position:absolute; bottom:80px; left:0; right:10px;
+  padding:13px 15px;
+  animation: fb 6.2s ease-in-out infinite;
+  transform: perspective(480px) rotateY(10deg) translateZ(0);
+}
+
+/* ghost panel behind left cluster */
+.ghostLeft {
+  position:absolute; bottom:0; left:20px; right:-10px; height:140px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,0.55);
+  background:rgba(255,255,255,0.22);
+  transform: perspective(480px) rotateY(14deg) rotateX(6deg) translateZ(-20px);
+}
+
+.badgeRow  { display:flex; align-items:center; gap:10px; }
+.badgeText { display:flex; flex-direction:column; gap:2px; }
+.badgeName { font-size:.80rem; font-weight:700; color:var(--text-primary); letter-spacing:.01em; }
+.badgeSub  { font-size:.62rem; color:var(--text-secondary); }
+
+/* ── RIGHT cluster ────────────────────────────────────────────────── */
+.right {
+  position:relative; width:210px; height:420px; flex-shrink:0;
+  @media(max-width:860px){display:none}
+}
+
+.gearBig {
+  composes: card;
+  position:absolute; top:8px; right:8px;
+  width:120px; height:120px;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  animation: fa 6.8s ease-in-out infinite;
+  transform: perspective(480px) rotateY(-14deg) rotateX(-4deg) translateZ(0);
+}
+
+.gearSpin {
+  display:flex; align-items:center; justify-content:center; padding:22px;
+  color:var(--text-secondary);
+  animation: gr 22s linear infinite; will-change:transform;
+}
+
+.aiCard {
+  composes: card;
+  position:absolute; top:calc(50% - 20px); left:0; right:16px;
+  padding:12px 14px;
+  display:flex; align-items:center; gap:10px;
+  animation: fb 5.8s ease-in-out infinite;
+  transform: perspective(480px) rotateY(-10deg) translateZ(0);
+}
+
+.aiAvatar {
+  width:30px; height:30px; border-radius:8px;
+  background:var(--text-primary); color:#fff;
+  font-size:.52rem; font-weight:800; letter-spacing:.04em;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+
+.aiText   { display:flex; flex-direction:column; gap:2px; }
+.aiName   { font-size:.76rem; font-weight:600; color:var(--text-primary); }
+.aiStatus { font-size:.61rem; color:var(--text-secondary); }
+
+.gearSmall {
+  composes: card;
+  position:absolute; bottom:62px; right:0;
+  width:78px; height:78px;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+  animation: fb 7.2s ease-in-out infinite 1s;
+  transform: perspective(480px) rotateY(-16deg) translateZ(0);
+  svg { animation: gr 14s linear infinite reverse; will-change:transform; }
+}
+
+/* ghost panel behind right cluster */
+.ghostRight {
+  position:absolute; bottom:0; left:-10px; right:16px; height:130px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,0.50);
+  background:rgba(255,255,255,0.18);
+  transform: perspective(480px) rotateY(-12deg) rotateX(6deg) translateZ(-20px);
+}
+
+/* Blue glow orb */
+.orb {
+  position:absolute; bottom:156px; right:38px;
+  width:13px; height:13px; border-radius:50%;
+  background: radial-gradient(circle,#80CAFF 0%,#3D8FE8 65%,transparent 100%);
+  box-shadow: 0 0 12px 5px rgba(61,143,232,.50), 0 0 28px 10px rgba(61,143,232,.18);
+  animation: gp 2.6s ease-in-out infinite; will-change:transform,opacity;
+}
+
+/* Floating spheres */
+.dot {
+  position:absolute; border-radius:50%;
+  background: radial-gradient(circle at 34% 34%, rgba(255,255,255,.92), rgba(200,210,240,.40));
+  border:1px solid rgba(255,255,255,.75);
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+  animation: fa 4s ease-in-out infinite; transform:translateZ(0);
+}

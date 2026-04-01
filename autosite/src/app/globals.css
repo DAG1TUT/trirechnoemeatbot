@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --navy: #001d3d;
+  --navy-dark: #00111f;
+  --navy-mid: #012a5a;
+  --accent: #ff6b00;
+  --accent-light: #ff8c33;
+  --muted: #f4f4f4;
+  --muted-dark: #e8e8e8;
+  --background: #ffffff;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --color-navy: var(--navy);
+  --color-navy-dark: var(--navy-dark);
+  --color-navy-mid: var(--navy-mid);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-muted: var(--muted);
+  --color-muted-dark: var(--muted-dark);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 30%, white);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--navy-dark); }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 0; }
+
+/* Noise texture overlay */
+.noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px;
+  pointer-events: none;
+  opacity: 0.35;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}

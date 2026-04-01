@@ -1,0 +1,5 @@
+// Breakpoint mixins — import where needed
+@mixin mobile  { @media (max-width: 520px)  { @content; } }
+@mixin tablet  { @media (max-width: 768px)  { @content; } }
+@mixin desktop { @media (min-width: 1400px) { @content; } }
+@mixin retina  { @media (min-resolution: 2dppx) { @content; } }

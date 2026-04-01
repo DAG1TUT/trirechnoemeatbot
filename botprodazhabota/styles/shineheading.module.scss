@@ -1,0 +1,23 @@
+.heading {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+.shine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.72) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  transform: skewX(-15deg);
+  will-change: transform;
+}

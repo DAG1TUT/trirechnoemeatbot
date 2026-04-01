@@ -1,0 +1,198 @@
+.section {
+  position:relative; z-index:1; padding:100px 5vw;
+  background:linear-gradient(180deg,#E8E9F1 0%,#EBEBF2 100%);
+  contain:layout style;
+  @media(max-width:768px){padding:72px 20px}
+}
+
+.inner   { max-width:1200px; margin:0 auto; }
+
+.heading { text-align:center; margin-bottom:48px; }
+.eyebrow {
+  font-size:.70rem; font-weight:600; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--accent); margin-bottom:12px;
+}
+.title {
+  font-size:clamp(2rem,3.5vw,3.2rem); font-weight:800;
+  letter-spacing:-.025em; text-transform:uppercase;
+  color:var(--text-primary); margin-bottom:10px;
+  font-family:'Inter',sans-serif;
+}
+.desc { font-size:.88rem; color:var(--text-secondary); }
+
+/* ── KPI row ────────────────────────────────────────────────────── */
+.kpiRow {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:16px;
+  margin-bottom:28px;
+  @media(max-width:720px){grid-template-columns:repeat(2,1fr)}
+  @media(max-width:420px){grid-template-columns:1fr}
+}
+
+.kpi {
+  padding:20px 22px; border-radius:16px;
+  background:rgba(255,255,255,.72);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.88);
+  box-shadow:var(--card-shadow);
+  display:flex; flex-direction:column; gap:4px;
+  transform:translateZ(0); contain:layout style paint;
+}
+.kpiNum {
+  font-size:1.9rem; font-weight:800; letter-spacing:-.03em;
+  color:var(--text-primary); font-family:'Inter',sans-serif;
+  line-height:1.1;
+}
+.kpiLabel { font-size:.70rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.04em; }
+
+/* ── Dashboard card layout ──────────────────────────────────────── */
+.dashboard {
+  display:grid; grid-template-columns:1.35fr 1fr; gap:20px;
+  @media(max-width:860px){grid-template-columns:1fr}
+}
+
+.left, .right { display:flex; flex-direction:column; gap:18px; }
+
+/* ── Generic chart card ─────────────────────────────────────────── */
+.chartCard {
+  padding:22px 24px; border-radius:18px;
+  background:rgba(255,255,255,.78);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.90);
+  box-shadow:var(--card-shadow);
+  transform:translateZ(0); contain:layout style paint;
+}
+
+.chartHeader {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:18px; flex-wrap:wrap; gap:8px;
+}
+
+.chartTitle {
+  font-size:.74rem; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--text-secondary);
+  margin-bottom:16px; display:block;
+}
+
+/* ── Bar chart ──────────────────────────────────────────────────── */
+.legend {
+  display:flex; align-items:center; gap:10px;
+  font-size:.66rem; color:var(--text-secondary);
+}
+.legDot {
+  width:8px; height:8px; border-radius:2px;
+  background:rgba(170,180,220,.5); display:inline-block; margin-right:4px;
+}
+.legDot.legAccent { background:var(--accent); }
+
+.chartArea { overflow-x:auto; padding-bottom:4px; }
+
+.bars {
+  display:flex; align-items:flex-end; gap:4px;
+  height:160px; min-width:340px;
+  padding-bottom:24px; /* room for labels */
+}
+
+.barGroup {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:flex-end;
+  gap:2px; position:relative; height:100%;
+}
+
+.barWrap {
+  display:flex; flex-direction:column; align-items:center;
+  position:relative; justify-content:flex-end;
+}
+
+.bar {
+  width:10px; border-radius:4px 4px 0 0;
+  background:rgba(160,175,220,.45);
+  will-change:transform;
+}
+.bar.barAccent { background:var(--accent); width:8px; }
+
+.barVal {
+  font-size:.54rem; color:var(--text-ghost);
+  position:absolute; top:-14px; white-space:nowrap;
+}
+
+.barLabel {
+  position:absolute; bottom:-18px;
+  font-size:.62rem; color:var(--text-secondary);
+}
+
+/* ── Top questions ──────────────────────────────────────────────── */
+.topList { display:flex; flex-direction:column; gap:10px; }
+
+.topItem { display:flex; flex-direction:column; gap:5px; }
+
+.topMeta { display:flex; justify-content:space-between; align-items:center; }
+
+.topQ { font-size:.80rem; color:var(--text-primary); font-weight:500; }
+.topN { font-size:.70rem; color:var(--text-secondary); font-weight:400; }
+
+.progressTrack {
+  height:5px; border-radius:3px;
+  background:rgba(170,180,220,.22); overflow:hidden;
+}
+.progressFill {
+  height:100%; border-radius:3px;
+  background:var(--accent); width:0;
+  animation:fillBar .7s ease-out forwards;
+  animation-play-state:paused;
+}
+@keyframes fillBar { to{ width:var(--pct); } }
+
+/* Trigger via scroll — we use IntersectionObserver in the parent */
+.topItem:is(:hover) .progressFill,
+.chartCard .progressFill { animation-play-state:running; }
+
+/* ── Funnel ─────────────────────────────────────────────────────── */
+.funnel { display:flex; flex-direction:column; gap:8px; }
+
+.funnelStep { display:flex; align-items:center; gap:10px; }
+
+.funnelBar {
+  height:28px; border-radius:0 6px 6px 0;
+  background:var(--accent); min-width:12px;
+  display:flex; align-items:center; justify-content:flex-end;
+  padding-right:8px;
+  opacity:0; width:0;
+  animation:funnelGrow .65s ease-out forwards;
+  animation-play-state:running;
+}
+@keyframes funnelGrow {
+  to { opacity:1; width:var(--pct, 100%); }
+}
+/* Override to use width for funnel */
+.funnelBar { --pct: attr(style width); }
+
+.funnelN { font-size:.74rem; font-weight:700; color:#fff; white-space:nowrap; }
+
+.funnelLabel {
+  font-size:.76rem; color:var(--text-secondary); white-space:nowrap; flex-shrink:0;
+}
+
+/* ── Recent feed ────────────────────────────────────────────────── */
+.feed { display:flex; flex-direction:column; gap:0; }
+
+.feedItem {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 0; border-bottom:1px solid rgba(160,165,210,.12);
+  &:last-child { border-bottom:none; }
+}
+
+.feedTime {
+  font-size:.66rem; color:var(--text-ghost); flex-shrink:0; width:36px;
+}
+.feedText {
+  flex:1; font-size:.78rem; color:var(--text-primary);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.feedTag {
+  flex-shrink:0; font-size:.60rem; font-weight:700; letter-spacing:.05em;
+  padding:2px 7px; border-radius:var(--r-full);
+  background:rgba(34,197,94,.12); color:#16a34a;
+}
+.feedTag.feedLead {
+  background:rgba(61,111,187,.12); color:var(--accent);
+}
