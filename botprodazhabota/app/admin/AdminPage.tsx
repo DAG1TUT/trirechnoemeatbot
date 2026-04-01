@@ -11,76 +11,73 @@ interface Client {
   systemPrompt: string;
   isActive: boolean;
   createdAt: string;
+  vkGroupId: string | null;
+  vkAccessToken: string | null;
+  vkConfirmCode: string | null;
+  vkSecretKey: string | null;
 }
 
-const BUSINESS_TYPES = [
-  'Суши / Роллы', 'Пицца', 'Доставка еды', 'Кафе / Кофейня',
-  'Бургерная', 'Шаурма / Фастфуд', 'Мясной ресторан', 'Пекарня', 'Другое',
+const BIZ_TYPES = [
+  'Суши / Роллы','Пицца','Доставка еды','Кафе / Кофейня',
+  'Бургерная','Шаурма / Фастфуд','Мясной ресторан','Пекарня','Другое',
 ];
 
+function getWebhookUrl(groupId: string) {
+  const base = typeof window !== 'undefined' ? window.location.origin : '';
+  return `${base}/api/vk/${groupId}`;
+}
+
 export default function AdminPage() {
-  const [secret, setSecret]     = useState('');
-  const [authed, setAuthed]     = useState(false);
-  const [clients, setClients]   = useState<Client[]>([]);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
-  const [copied, setCopied]     = useState('');
-  const [editing, setEditing]   = useState<Client | null>(null);
+  const [secret, setSecret]   = useState('');
+  const [authed, setAuthed]   = useState(false);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoad]    = useState(false);
+  const [error, setError]     = useState('');
+  const [copied, setCopied]   = useState('');
+  const [open, setOpen]       = useState<string | null>(null); // expanded client id
+  const [vkEdit, setVkEdit]   = useState<Partial<Client>>({});
 
-  const [form, setForm] = useState({
-    businessName: '', businessType: '', systemPrompt: '',
-  });
+  const [form, setForm] = useState({ businessName: '', businessType: '', systemPrompt: '' });
 
-  const headers = useCallback(() => ({
+  const hdrs = useCallback(() => ({
     'Content-Type': 'application/json',
     'x-admin-secret': secret,
   }), [secret]);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch('/api/client', { headers: headers() });
+    setLoad(true);
+    const res = await fetch('/api/client', { headers: hdrs() });
     if (res.status === 401) { setError('Неверный пароль'); setAuthed(false); }
     else { setClients(await res.json()); setError(''); }
-    setLoading(false);
-  }, [headers]);
-
-  const login = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthed(true);
-    await load();
-  };
+    setLoad(false);
+  }, [hdrs]);
 
   useEffect(() => { if (authed) load(); }, [authed, load]);
+
+  const login = async (e: React.FormEvent) => {
+    e.preventDefault(); setAuthed(true); await load();
+  };
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.businessName || !form.systemPrompt) return;
-    await fetch('/api/client', {
-      method: 'POST', headers: headers(),
-      body: JSON.stringify(form),
-    });
+    await fetch('/api/client', { method: 'POST', headers: hdrs(), body: JSON.stringify(form) });
     setForm({ businessName: '', businessType: '', systemPrompt: '' });
     load();
   };
 
-  const save = async () => {
-    if (!editing) return;
-    await fetch(`/api/client/${editing.apiKey}`, {
-      method: 'PATCH', headers: headers(),
-      body: JSON.stringify({
-        businessName: editing.businessName,
-        businessType: editing.businessType,
-        systemPrompt: editing.systemPrompt,
-        isActive: editing.isActive,
-      }),
+  const saveVK = async (c: Client) => {
+    await fetch(`/api/client/${c.apiKey}`, {
+      method: 'PATCH', headers: hdrs(),
+      body: JSON.stringify(vkEdit),
     });
-    setEditing(null);
+    setVkEdit({});
     load();
   };
 
   const toggle = async (c: Client) => {
     await fetch(`/api/client/${c.apiKey}`, {
-      method: 'PATCH', headers: headers(),
+      method: 'PATCH', headers: hdrs(),
       body: JSON.stringify({ isActive: !c.isActive }),
     });
     load();
@@ -88,109 +85,205 @@ export default function AdminPage() {
 
   const copy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(''), 1800);
+    setCopied(key); setTimeout(() => setCopied(''), 1800);
+  };
+
+  const expand = (id: string) => {
+    if (open === id) { setOpen(null); setVkEdit({}); }
+    else { setOpen(id); const c = clients.find(x => x.id === id)!;
+      setVkEdit({ vkGroupId: c.vkGroupId ?? '', vkConfirmCode: c.vkConfirmCode ?? '',
+                  vkSecretKey: c.vkSecretKey ?? '', vkAccessToken: c.vkAccessToken ?? '' }); }
   };
 
   if (!authed) return (
     <div className={styles.login}>
-      <h1>Блик — Админка</h1>
-      <form onSubmit={login}>
-        <input type="password" placeholder="Пароль (ADMIN_SECRET)"
-          value={secret} onChange={e => setSecret(e.target.value)} />
-        <button type="submit">Войти</button>
-        {error && <p className={styles.err}>{error}</p>}
-      </form>
+      <div className={styles.loginBox}>
+        <div className={styles.logo}>⚡ Блик Админ</div>
+        <form onSubmit={login}>
+          <input type="password" placeholder="Пароль (ADMIN_SECRET)"
+            value={secret} onChange={e => setSecret(e.target.value)} autoFocus />
+          <button type="submit">Войти</button>
+          {error && <p className={styles.err}>{error}</p>}
+        </form>
+      </div>
     </div>
   );
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1>Клиенты Блик</h1>
-        <span className={styles.count}>{clients.length} заведений</span>
-        <button className={styles.refresh} onClick={load}>↻</button>
+        <div className={styles.headerLeft}>
+          <span className={styles.logo}>⚡ Блик</span>
+          <span className={styles.count}>{clients.length} клиентов</span>
+        </div>
+        <button className={styles.refresh} onClick={load}>↻ Обновить</button>
       </header>
 
-      {/* Create form */}
+      {/* Create new client */}
       <section className={styles.createCard}>
-        <h2>Добавить клиента</h2>
+        <h2>+ Новый клиент</h2>
         <form onSubmit={create} className={styles.createForm}>
           <input placeholder="Название заведения *" value={form.businessName}
             onChange={e => setForm(p => ({ ...p, businessName: e.target.value }))} required />
           <select value={form.businessType}
             onChange={e => setForm(p => ({ ...p, businessType: e.target.value }))}>
-            <option value="">Тип (необязательно)</option>
-            {BUSINESS_TYPES.map(t => <option key={t}>{t}</option>)}
+            <option value="">Тип заведения</option>
+            {BIZ_TYPES.map(t => <option key={t}>{t}</option>)}
           </select>
-          <textarea rows={4} placeholder="Системный промт *"
+          <textarea rows={4} placeholder="Системный промт — опишите заведение, меню, тон общения *"
             value={form.systemPrompt}
             onChange={e => setForm(p => ({ ...p, systemPrompt: e.target.value }))} required />
-          <button type="submit">Создать → получить API ключ</button>
+          <button type="submit">Создать клиента →</button>
         </form>
       </section>
 
-      {/* Client list */}
       {loading && <p className={styles.loading}>Загрузка…</p>}
-      <div className={styles.grid}>
+
+      {/* Client list */}
+      <div className={styles.list}>
         {clients.map(c => (
-          <div key={c.id} className={`${styles.card} ${!c.isActive ? styles.inactive : ''}`}>
-            {editing?.id === c.id ? (
-              /* Edit mode */
-              <div className={styles.editMode}>
-                <input value={editing.businessName}
-                  onChange={e => setEditing(p => p && ({ ...p, businessName: e.target.value }))} />
-                <textarea rows={5} value={editing.systemPrompt}
-                  onChange={e => setEditing(p => p && ({ ...p, systemPrompt: e.target.value }))} />
-                <div className={styles.editBtns}>
-                  <button onClick={save} className={styles.save}>Сохранить</button>
-                  <button onClick={() => setEditing(null)} className={styles.cancel}>Отмена</button>
+          <div key={c.id} className={`${styles.clientCard} ${!c.isActive ? styles.inactive : ''}`}>
+
+            {/* Client header row */}
+            <div className={styles.clientHeader}>
+              <div className={styles.clientInfo}>
+                <span className={styles.bizName}>{c.businessName}</span>
+                {c.businessType && <span className={styles.bizType}>{c.businessType}</span>}
+                <span className={`${styles.badge} ${c.vkGroupId ? styles.badgeGreen : styles.badgeGray}`}>
+                  {c.vkGroupId ? '✓ VK подключён' : '○ VK не настроен'}
+                </span>
+              </div>
+              <div className={styles.clientActions}>
+                <span className={`${styles.status} ${c.isActive ? styles.active : styles.off}`}>
+                  {c.isActive ? 'Активен' : 'Откл.'}
+                </span>
+                <button onClick={() => expand(c.id)} className={styles.settingsBtn}>
+                  {open === c.id ? '▲ Закрыть' : '⚙ Настройки'}
+                </button>
+                <button onClick={() => toggle(c)} className={styles.toggleBtn}>
+                  {c.isActive ? 'Отключить' : 'Включить'}
+                </button>
+              </div>
+            </div>
+
+            {/* Expanded: VK setup */}
+            {open === c.id && (
+              <div className={styles.vkSetup}>
+
+                {/* Step 1 */}
+                <div className={styles.step}>
+                  <div className={styles.stepNum}>1</div>
+                  <div className={styles.stepBody}>
+                    <p className={styles.stepTitle}>Откройте управление сообществом VK</p>
+                    <p className={styles.stepDesc}>
+                      VK → Ваше сообщество → <b>Управление</b> → <b>Работа с API</b> → <b>Callback API</b>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className={styles.step}>
+                  <div className={styles.stepNum}>2</div>
+                  <div className={styles.stepBody}>
+                    <p className={styles.stepTitle}>Введите ID вашего сообщества</p>
+                    <p className={styles.stepDesc}>
+                      Найдите в адресной строке: vk.com/club<b>123456789</b> — это и есть ID
+                    </p>
+                    <input className={styles.vkInput} placeholder="Например: 123456789"
+                      value={vkEdit.vkGroupId ?? ''}
+                      onChange={e => setVkEdit(p => ({ ...p, vkGroupId: e.target.value }))} />
+                  </div>
+                </div>
+
+                {/* Step 3: Webhook URL */}
+                <div className={styles.step}>
+                  <div className={styles.stepNum}>3</div>
+                  <div className={styles.stepBody}>
+                    <p className={styles.stepTitle}>Вставьте этот URL в поле «Адрес сервера» VK</p>
+                    <div className={styles.urlRow}>
+                      <code className={styles.urlBox}>
+                        {vkEdit.vkGroupId
+                          ? getWebhookUrl(vkEdit.vkGroupId)
+                          : '← Сначала введите ID сообщества'}
+                      </code>
+                      {vkEdit.vkGroupId && (
+                        <button className={styles.copyBtn}
+                          onClick={() => copy(getWebhookUrl(vkEdit.vkGroupId!), 'url' + c.id)}>
+                          {copied === 'url' + c.id ? '✓' : 'Копировать'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 4: Confirmation code */}
+                <div className={styles.step}>
+                  <div className={styles.stepNum}>4</div>
+                  <div className={styles.stepBody}>
+                    <p className={styles.stepTitle}>Скопируйте «Строку подтверждения» из VK и вставьте сюда</p>
+                    <input className={styles.vkInput} placeholder="Строка подтверждения из VK"
+                      value={vkEdit.vkConfirmCode ?? ''}
+                      onChange={e => setVkEdit(p => ({ ...p, vkConfirmCode: e.target.value }))} />
+                  </div>
+                </div>
+
+                {/* Step 5: Secret key (optional) */}
+                <div className={styles.step}>
+                  <div className={styles.stepNum}>5</div>
+                  <div className={styles.stepBody}>
+                    <p className={styles.stepTitle}>Секретный ключ (необязательно, но рекомендуется)</p>
+                    <p className={styles.stepDesc}>
+                      Придумайте любую строку, вставьте в VK и сюда — для защиты вебхука
+                    </p>
+                    <input className={styles.vkInput} placeholder="Любая строка, например: mySecret123"
+                      value={vkEdit.vkSecretKey ?? ''}
+                      onChange={e => setVkEdit(p => ({ ...p, vkSecretKey: e.target.value }))} />
+                  </div>
+                </div>
+
+                {/* Step 6: Access token */}
+                <div className={styles.step}>
+                  <div className={styles.stepNum}>6</div>
+                  <div className={styles.stepBody}>
+                    <p className={styles.stepTitle}>Ключ доступа сообщества</p>
+                    <p className={styles.stepDesc}>
+                      VK → Управление → Работа с API → <b>Ключи доступа</b> → Создать ключ.<br />
+                      Разрешите: <b>Сообщения сообщества</b>
+                    </p>
+                    <input className={styles.vkInput} type="password"
+                      placeholder="vk1.a.xxxxx..."
+                      value={vkEdit.vkAccessToken ?? ''}
+                      onChange={e => setVkEdit(p => ({ ...p, vkAccessToken: e.target.value }))} />
+                  </div>
+                </div>
+
+                {/* Step 7: Enable messages */}
+                <div className={styles.step}>
+                  <div className={styles.stepNum}>7</div>
+                  <div className={styles.stepBody}>
+                    <p className={styles.stepTitle}>Включите события в VK</p>
+                    <p className={styles.stepDesc}>
+                      В VK Callback API нажмите <b>«Подтвердить»</b>, затем во вкладке <b>«Типы событий»</b>{' '}
+                      включите <b>«Входящее сообщение»</b>
+                    </p>
+                  </div>
+                </div>
+
+                <button className={styles.saveVKBtn} onClick={() => saveVK(c)}>
+                  Сохранить и подключить VK ✓
+                </button>
+
+                {/* Prompt editor */}
+                <div className={styles.promptSection}>
+                  <p className={styles.stepTitle}>Системный промт заведения</p>
+                  <textarea rows={5} className={styles.vkInput} defaultValue={c.systemPrompt}
+                    onBlur={e => fetch(`/api/client/${c.apiKey}`, {
+                      method: 'PATCH', headers: hdrs(),
+                      body: JSON.stringify({ systemPrompt: e.target.value }),
+                    })} />
+                  <p className={styles.stepDesc}>Изменения сохраняются автоматически при выходе из поля</p>
                 </div>
               </div>
-            ) : (
-              /* View mode */
-              <>
-                <div className={styles.cardHeader}>
-                  <div>
-                    <span className={styles.bizName}>{c.businessName}</span>
-                    {c.businessType && <span className={styles.bizType}>{c.businessType}</span>}
-                  </div>
-                  <span className={`${styles.status} ${c.isActive ? styles.active : styles.off}`}>
-                    {c.isActive ? 'Активен' : 'Отключён'}
-                  </span>
-                </div>
-
-                {/* API Key */}
-                <div className={styles.keyRow}>
-                  <code className={styles.key}>{c.apiKey}</code>
-                  <button className={styles.copyBtn}
-                    onClick={() => copy(c.apiKey, c.id + 'key')}>
-                    {copied === c.id + 'key' ? '✓' : 'Копировать'}
-                  </button>
-                </div>
-
-                {/* Prompt preview */}
-                <p className={styles.promptPreview}>{c.systemPrompt.slice(0, 120)}…</p>
-
-                {/* Actions */}
-                <div className={styles.actions}>
-                  <button onClick={() => setEditing(c)}>Редактировать</button>
-                  <button onClick={() => toggle(c)} className={styles.toggleBtn}>
-                    {c.isActive ? 'Отключить' : 'Включить'}
-                  </button>
-                  <button className={styles.copyBtn}
-                    onClick={() => copy(
-                      `curl -X POST https://ваш-домен/api/chat \\\n  -H "Content-Type: application/json" \\\n  -d '{"message":"Привет","apiKey":"${c.apiKey}"}'`,
-                      c.id + 'curl'
-                    )}>
-                    {copied === c.id + 'curl' ? '✓ curl скопирован' : 'Скопировать curl'}
-                  </button>
-                </div>
-
-                <p className={styles.date}>
-                  Создан: {new Date(c.createdAt).toLocaleDateString('ru')}
-                </p>
-              </>
             )}
           </div>
         ))}

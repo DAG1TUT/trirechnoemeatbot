@@ -16,4 +16,10 @@ model Client {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  // VK integration
+  vkGroupId     String?  @unique   // ID сообщества VK (число)
+  vkAccessToken String?            // Ключ доступа сообщества (для отправки сообщений)
+  vkConfirmCode String?            // Строка подтверждения из настроек VK Callback
+  vkSecretKey   String?            // Секретный ключ из настроек VK Callback
 }
