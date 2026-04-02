@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
   const clients = await prisma.client.findMany({
     orderBy: { createdAt: 'desc' },
     select: { id: true, apiKey: true, businessName: true, businessType: true,
-               systemPrompt: true, isActive: true, createdAt: true },
+               systemPrompt: true, isActive: true, createdAt: true,
+               vkGroupId: true, vkAccessToken: true, vkConfirmCode: true, vkSecretKey: true },
   });
   return Response.json(clients);
 }
