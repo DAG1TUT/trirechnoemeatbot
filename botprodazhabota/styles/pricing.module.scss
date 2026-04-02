@@ -55,13 +55,12 @@
 }
 
 .badge {
-  display:inline-flex; align-items:center; gap:5px;
-  align-self:flex-start;
-  padding:4px 12px; border-radius:var(--r-full);
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 10px; border-radius:var(--r-full);
   background:var(--accent); color:#fff;
-  font-size:.65rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  font-size:.60rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
   box-shadow:0 3px 10px var(--accent-dim); white-space:nowrap;
-  margin-bottom:4px;
+  flex-shrink:0;
 }
 
 .top { display:flex; flex-direction:column; gap:8px; }
@@ -71,7 +70,7 @@
   text-transform:uppercase; color:var(--text-secondary);
 }
 
-.priceRow { display:flex; align-items:baseline; gap:6px; }
+.priceRow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 
 .price {
   font-size:clamp(1.6rem,2.5vw,2.2rem); font-weight:800;

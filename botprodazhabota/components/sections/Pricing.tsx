@@ -87,12 +87,12 @@ export default function Pricing() {
               className={`${styles.card} ${plan.highlight ? styles.featured : ''}`}
             >
               <div className={styles.top}>
-                {plan.highlight && (
-                  <div className={styles.badge}>⭐ Популярный</div>
-                )}
                 <div className={styles.priceRow}>
                   <span className={styles.price}>{plan.price} ₽</span>
                   <span className={styles.period}>{plan.period}</span>
+                  {plan.highlight && (
+                    <div className={styles.badge}>⭐ Популярный</div>
+                  )}
                 </div>
                 {plan.billing && (
                   <p className={styles.billing}>{plan.billing}</p>
