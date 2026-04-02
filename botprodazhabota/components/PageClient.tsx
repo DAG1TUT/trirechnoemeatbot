@@ -16,8 +16,8 @@ export default function PageClient() {
     <main>
       <Navbar />
       <Hero systemPrompt={sysPrompt} />
-      <Features />
       <SystemPromptConfig onApply={setSysPrompt} />
+      <Features />
       <Pricing />
       <CTASection />
       <Footer />
