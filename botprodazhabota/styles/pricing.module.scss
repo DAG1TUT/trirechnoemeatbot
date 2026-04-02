@@ -49,17 +49,19 @@
   background:var(--text-primary);
   border-color:rgba(255,255,255,.12);
   box-shadow:0 20px 60px rgba(12,12,20,.22), 0 4px 12px rgba(12,12,20,.14);
-  .planName, .price, .planDesc, .feature { color:#fff !important; }
+  .planName, .price, .feature { color:#fff !important; }
   .period { color:rgba(255,255,255,.5) !important; }
   &:hover{ border-color:rgba(61,111,187,.45); }
 }
 
 .badge {
-  position:absolute; top:-12px; left:50%; transform:translateX(-50%);
-  padding:4px 16px; border-radius:var(--r-full);
+  display:inline-flex; align-items:center; gap:5px;
+  align-self:flex-start;
+  padding:4px 12px; border-radius:var(--r-full);
   background:var(--accent); color:#fff;
-  font-size:.66rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
-  box-shadow:0 4px 14px var(--accent-dim); white-space:nowrap;
+  font-size:.65rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  box-shadow:0 3px 10px var(--accent-dim); white-space:nowrap;
+  margin-bottom:4px;
 }
 
 .top { display:flex; flex-direction:column; gap:8px; }

@@ -11,7 +11,6 @@ const PLANS: Array<{
   price: string;
   period: string;
   billing: string | null;
-  desc: string;
   features: string[];
   cta: string;
   highlight: boolean;
@@ -20,7 +19,6 @@ const PLANS: Array<{
     price: '5 000',
     period: '/ мес',
     billing: null,
-    desc: 'Ежемесячная оплата. Удобно попробовать и оценить.',
     features: [
       'Подключение к VK сообществу',
       'Настройка под ваше меню',
@@ -34,7 +32,6 @@ const PLANS: Array<{
     price: '3 000',
     period: '/ мес',
     billing: '18 000 ₽ раз в 6 месяцев',
-    desc: 'Выгоднее на 40%. Оплата раз в полгода.',
     features: [
       'Подключение к VK сообществу',
       'Настройка под ваше меню',
@@ -48,7 +45,6 @@ const PLANS: Array<{
     price: '2 000',
     period: '/ мес',
     billing: '24 000 ₽ раз в год',
-    desc: 'Максимальная выгода. Оплата раз в год.',
     features: [
       'Подключение к VK сообществу',
       'Настройка под ваше меню',
@@ -90,9 +86,10 @@ export default function Pricing() {
               ref={el => { if (el) cardsRef.current[i] = el; }}
               className={`${styles.card} ${plan.highlight ? styles.featured : ''}`}
             >
-              {plan.highlight && <div className={styles.badge}>Популярный</div>}
-
               <div className={styles.top}>
+                {plan.highlight && (
+                  <div className={styles.badge}>⭐ Популярный</div>
+                )}
                 <div className={styles.priceRow}>
                   <span className={styles.price}>{plan.price} ₽</span>
                   <span className={styles.period}>{plan.period}</span>
@@ -100,7 +97,6 @@ export default function Pricing() {
                 {plan.billing && (
                   <p className={styles.billing}>{plan.billing}</p>
                 )}
-                <p className={styles.planDesc}>{plan.desc}</p>
               </div>
 
               <ul className={styles.features}>
