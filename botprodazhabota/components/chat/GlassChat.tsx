@@ -16,37 +16,56 @@ interface GlassChatProps {
 }
 
 export default function GlassChat({ onBotFlash, systemPrompt }: GlassChatProps) {
+  // Completed messages — never mutated during streaming
   const [messages, setMessages] = useState<Message[]>([{
     id: 'intro', role: 'bot',
     text: 'Привет! Я Блик — AI-ассистент для автоматизации продаж в VK. Спросите о возможностях.',
     streaming: false,
   }]);
+
+  // Streaming bot reply — separate state so only this bubble re-renders
+  const [stream, setStream] = useState<{ text: string; active: boolean }>({ text: '', active: false });
+
   const [input, setInput]    = useState('');
   const [thinking, setThink] = useState(false);
 
-  const msgsRef  = useRef<HTMLDivElement>(null); // messages container
+  const msgsRef  = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Accumulate tokens in a ref — flush to state via rAF to avoid per-token renders
+  const accRef   = useRef('');
+  const rafRef   = useRef<number | null>(null);
 
-  // Scroll only inside the messages div — no page jump
   const scrollEnd = useCallback(() => {
-    if (!msgsRef.current) return;
-    msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
+    if (msgsRef.current) msgsRef.current.scrollTop = msgsRef.current.scrollHeight;
   }, []);
+
+  const flushAcc = useCallback(() => {
+    setStream({ text: accRef.current, active: true });
+    scrollEnd();
+    rafRef.current = null;
+  }, [scrollEnd]);
 
   const send = useCallback(async (text: string) => {
     if (!text.trim() || thinking) return;
 
-    setMessages(p => [...p, { id: Date.now().toString(), role: 'user', text: text.trim(), streaming: false }]);
+    const userMsg: Message = {
+      id: `u_${Date.now()}`,
+      role: 'user',
+      text: text.trim(),
+      streaming: false,
+    };
+
+    setMessages(prev => [...prev, userMsg]);
     setInput('');
     setThink(true);
+    setStream({ text: '', active: true });
+    accRef.current = '';
     setTimeout(scrollEnd, 30);
 
-    const botId = (Date.now() + 1).toString();
-    // Start bot message with streaming flag — ChatBubble shows plain text during stream
-    setMessages(p => [...p, { id: botId, role: 'bot', text: '', streaming: true }]);
-
     try {
+      abortRef.current?.abort();
       abortRef.current = new AbortController();
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -58,7 +77,6 @@ export default function GlassChat({ onBotFlash, systemPrompt }: GlassChatProps) 
 
       const reader  = res.body.getReader();
       const decoder = new TextDecoder();
-      let acc = '';
 
       while (true) {
         const { done, value } = await reader.read();
@@ -71,27 +89,45 @@ export default function GlassChat({ onBotFlash, systemPrompt }: GlassChatProps) 
           try {
             const token = JSON.parse(d).choices?.[0]?.delta?.content;
             if (token) {
-              acc += token;
-              setMessages(p => p.map(m => m.id === botId ? { ...m, text: acc } : m));
-              scrollEnd();
+              accRef.current += token;
+              // Throttle: schedule one rAF per batch of tokens
+              if (!rafRef.current) {
+                rafRef.current = requestAnimationFrame(flushAcc);
+              }
             }
           } catch { /* ignore parse errors */ }
         }
       }
 
-      // Mark done — keep streaming:false so ChatBubble shows text as-is (no re-animation)
-      setMessages(p => p.map(m => m.id === botId ? { ...m, streaming: false } : m));
+      // Cancel any pending rAF and do a final flush
+      if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+
+      const finalText = accRef.current;
+
+      // Move completed message into the messages array; clear streaming state
+      setMessages(prev => [...prev, {
+        id: `b_${Date.now()}`,
+        role: 'bot',
+        text: finalText,
+        streaming: false,
+      }]);
+      setStream({ text: '', active: false });
       onBotFlash?.();
 
     } catch (e: unknown) {
       if (e instanceof Error && e.name === 'AbortError') return;
-      setMessages(p => p.map(m => m.id === botId
-        ? { ...m, text: 'Ошибка соединения. Попробуйте ещё раз.', streaming: false } : m));
+      setMessages(prev => [...prev, {
+        id: `b_err_${Date.now()}`,
+        role: 'bot',
+        text: 'Ошибка соединения. Попробуйте ещё раз.',
+        streaming: false,
+      }]);
+      setStream({ text: '', active: false });
     } finally {
       setThink(false);
       setTimeout(scrollEnd, 50);
     }
-  }, [thinking, systemPrompt, onBotFlash, scrollEnd]);
+  }, [thinking, systemPrompt, onBotFlash, scrollEnd, flushAcc]);
 
   return (
     <div className={styles.panel}>
@@ -104,15 +140,23 @@ export default function GlassChat({ onBotFlash, systemPrompt }: GlassChatProps) 
         </button>
       </div>
 
-      {/* Messages — ref on the container, not on a child sentinel */}
+      {/* Messages */}
       <div ref={msgsRef} className={styles.messages}>
+        {/* Completed messages — never re-render during streaming */}
         {messages.map(m => <ChatBubble key={m.id} message={m} />)}
-        {thinking && !messages.some(m => m.streaming) && (
-          <div className={styles.thinking}><span/><span/><span/></div>
+
+        {/* Live streaming bubble — only this re-renders during streaming */}
+        {stream.active && (
+          stream.text
+            ? <ChatBubble
+                key="streaming"
+                message={{ id: 'streaming', role: 'bot', text: stream.text, streaming: true }}
+              />
+            : <div className={styles.thinking}><span/><span/><span/></div>
         )}
       </div>
 
-      {/* Chips — only before first user message */}
+      {/* Chips */}
       {messages.filter(m => m.role === 'user').length < 1 && (
         <div className={styles.chips}>
           {SUGGESTED.map(s => (
@@ -132,7 +176,8 @@ export default function GlassChat({ onBotFlash, systemPrompt }: GlassChatProps) 
           rows={1}
           disabled={thinking}
         />
-        <button type="submit" className={styles.send} disabled={!input.trim() || thinking} aria-label="Отправить">
+        <button type="submit" className={styles.send}
+          disabled={!input.trim() || thinking} aria-label="Отправить">
           <svg viewBox="0 0 20 20" fill="none" width={16} height={16}>
             <path d="M17 10L3 3l2.5 7L3 17l14-7z" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round"/>
           </svg>
