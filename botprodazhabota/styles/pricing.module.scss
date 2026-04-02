@@ -65,6 +65,12 @@
   }
 }
 
+/* ── Badge slot (fixed height so price is always aligned) */
+.badgeSlot {
+  height: 26px;
+  display:flex; align-items:center;
+}
+
 /* ── Badge ────────────────────────────────────────────── */
 .badge {
   display:inline-flex; align-items:center; gap:4px;

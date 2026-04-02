@@ -61,9 +61,11 @@ export default function Pricing() {
               ref={el => { if (el) cardsRef.current[i] = el; }}
               className={`${styles.card} ${plan.highlight ? styles.featured : ''}`}
             >
-              {plan.highlight && (
-                <div className={styles.badge}>⭐ Популярный</div>
-              )}
+              <div className={styles.badgeSlot}>
+                {plan.highlight && (
+                  <div className={styles.badge}>⭐ Популярный</div>
+                )}
+              </div>
 
               <div className={styles.priceBlock}>
                 <div className={styles.priceRow}>
