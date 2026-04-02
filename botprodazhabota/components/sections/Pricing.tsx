@@ -7,50 +7,25 @@ import styles from '@/styles/pricing.module.scss';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const PLANS: Array<{
-  price: string;
-  period: string;
-  billing: string | null;
-  features: string[];
-  cta: string;
-  highlight: boolean;
-}> = [
+const PLANS = [
   {
     price: '5 000',
-    period: '/ мес',
-    billing: null,
-    features: [
-      'Подключение к VK сообществу',
-      'Настройка под ваше меню',
-      'Ответы 24/7 без участия',
-      'Поддержка по почте',
-    ],
+    billing: 'Ежемесячно',
+    sub: null,
     cta: 'Начать',
     highlight: false,
   },
   {
     price: '3 000',
-    period: '/ мес',
-    billing: '18 000 ₽ раз в 6 месяцев',
-    features: [
-      'Подключение к VK сообществу',
-      'Настройка под ваше меню',
-      'Ответы 24/7 без участия',
-      'Приоритетная поддержка',
-    ],
+    billing: '18 000 ₽ / полгода',
+    sub: 'Выгода 40%',
     cta: 'Выбрать',
     highlight: true,
   },
   {
     price: '2 000',
-    period: '/ мес',
-    billing: '24 000 ₽ раз в год',
-    features: [
-      'Подключение к VK сообществу',
-      'Настройка под ваше меню',
-      'Ответы 24/7 без участия',
-      'Персональная настройка',
-    ],
+    billing: '24 000 ₽ / год',
+    sub: 'Выгода 60%',
     cta: 'Выбрать',
     highlight: false,
   },
@@ -86,26 +61,19 @@ export default function Pricing() {
               ref={el => { if (el) cardsRef.current[i] = el; }}
               className={`${styles.card} ${plan.highlight ? styles.featured : ''}`}
             >
-              <div className={styles.top}>
-                <div className={styles.priceRow}>
-                  <span className={styles.price}>{plan.price} ₽</span>
-                  <span className={styles.period}>{plan.period}</span>
-                  {plan.highlight && (
-                    <div className={styles.badge}>⭐ Популярный</div>
-                  )}
-                </div>
-                {plan.billing && (
-                  <p className={styles.billing}>{plan.billing}</p>
-                )}
-              </div>
+              {plan.highlight && (
+                <div className={styles.badge}>⭐ Популярный</div>
+              )}
 
-              <ul className={styles.features}>
-                {plan.features.map(f => (
-                  <li key={f} className={styles.feature}>
-                    <span className={styles.check}>✓</span> {f}
-                  </li>
-                ))}
-              </ul>
+              <div className={styles.priceBlock}>
+                <div className={styles.priceRow}>
+                  <span className={styles.price}>{plan.price}</span>
+                  <span className={styles.currency}>₽</span>
+                  <span className={styles.period}>/ мес</span>
+                </div>
+                <p className={styles.billing}>{plan.billing}</p>
+                {plan.sub && <p className={styles.sub}>{plan.sub}</p>}
+              </div>
 
               <a href="#cta" className={`${styles.cta} ${plan.highlight ? styles.ctaFeatured : ''}`}
                 onClick={e => { e.preventDefault(); document.getElementById('cta')?.scrollIntoView({ behavior: 'smooth' }); }}>
