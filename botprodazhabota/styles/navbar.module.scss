@@ -1,42 +1,60 @@
 .nav {
   position:fixed; top:0; left:0; right:0; z-index:100;
-  display:flex; align-items:center; gap:0;
-  padding:14px 5vw;
+  display:flex; align-items:center;
+  padding:12px 5vw;
   transition:background .35s, border-color .35s, backdrop-filter .35s;
   border-bottom:1px solid transparent;
 
   &[data-s] {
-    background:rgba(235,235,242,0.90);
+    background:rgba(235,235,242,0.92);
     backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
     border-color:rgba(190,192,218,0.25);
+  }
+
+  @media(max-width:480px){
+    padding:10px 16px;
   }
 }
 
 .brand {
   display:flex; align-items:center; text-decoration:none; flex-shrink:0;
-  svg{display:block}
+  svg{ display:block; }
 }
 
 .links {
-  display:flex; gap:32px; margin:0 auto;
-  @media(max-width:640px){display:none}
+  display:flex; gap:28px; margin:0 auto;
+  @media(max-width:640px){ display:none; }
 
   a {
     font-size:.78rem; font-weight:600; letter-spacing:.04em;
     text-transform:uppercase; color:var(--text-secondary);
     text-decoration:none; transition:color .18s;
-    &:hover{color:var(--text-primary)}
+    &:hover{ color:var(--text-primary); }
   }
 }
 
+/* On mobile links are hidden — push CTA to the right */
+.spacer {
+  flex:1;
+}
+
 .cta {
-  flex-shrink:0; padding:8px 20px;
+  flex-shrink:0;
+  margin-left:auto;    /* push to right when links hidden */
+  padding:7px 16px;
   border-radius:var(--r-md);
   border:1.5px solid var(--text-primary);
   background:transparent; color:var(--text-primary);
-  font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
-  text-decoration:none;
+  font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  text-decoration:none; white-space:nowrap;
   transition:background .2s, color .2s, transform .2s, box-shadow .2s;
+
+  @media(max-width:480px){
+    padding:6px 13px;
+    font-size:.64rem;
+    letter-spacing:.04em;
+  }
+
   &:hover{
     background:var(--text-primary); color:#fff;
     transform:translateY(-1px); box-shadow:0 4px 14px rgba(12,12,20,.16);

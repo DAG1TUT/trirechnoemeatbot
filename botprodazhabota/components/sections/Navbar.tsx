@@ -56,6 +56,9 @@ export default function Navbar() {
         ))}
       </div>
 
+      {/* Spacer visible only when links are hidden on mobile */}
+      <div className={styles.spacer} />
+
       <a href="#pricing" className={styles.cta} onClick={go('#pricing')}>
         Подключить бота
       </a>
