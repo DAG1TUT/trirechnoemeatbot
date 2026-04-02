@@ -376,7 +376,7 @@ export default function SystemPromptConfig({ onApply }: Props) {
           {/* Custom system prompt */}
           <div className={styles.field}>
             <div className={styles.labelRow}>
-              <label className={styles.label}>Системный промт (необязательно)</label>
+              <label className={styles.label}>Системный промт (можно адаптировать под ваше заведение)</label>
               <button className={styles.autoBtn} onClick={autoFill}>
                 ✦ Сгенерировать авто
               </button>
