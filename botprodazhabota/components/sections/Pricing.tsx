@@ -7,7 +7,15 @@ import styles from '@/styles/pricing.module.scss';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const PLANS = [
+const PLANS: Array<{
+  price: string;
+  period: string;
+  billing: string | null;
+  desc: string;
+  features: string[];
+  cta: string;
+  highlight: boolean;
+}> = [
   {
     price: '5 000',
     period: '/ мес',
@@ -78,7 +86,7 @@ export default function Pricing() {
         <div className={styles.grid}>
           {PLANS.map((plan, i) => (
             <div
-              key={plan.name}
+              key={i}
               ref={el => { if (el) cardsRef.current[i] = el; }}
               className={`${styles.card} ${plan.highlight ? styles.featured : ''}`}
             >
