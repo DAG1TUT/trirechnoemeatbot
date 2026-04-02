@@ -79,6 +79,13 @@
 
 .period { font-size:.80rem; color:var(--text-secondary); font-weight:400; }
 
+.billing {
+  font-size:.76rem; font-weight:600; color:var(--accent);
+  letter-spacing:.01em;
+}
+
+.card.featured .billing { color:#7EC8FF; }
+
 .planDesc { font-size:.82rem; color:var(--text-secondary); line-height:1.55; }
 
 /* ── Feature list ────────────────────────────────────────────────── */

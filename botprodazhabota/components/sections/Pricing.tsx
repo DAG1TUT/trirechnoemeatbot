@@ -9,13 +9,12 @@ gsap.registerPlugin(ScrollTrigger);
 
 const PLANS = [
   {
-    name: 'Старт',
-    price: '2 990',
-    period: 'мес',
-    desc: 'Для небольших заведений — кофейни, ларьки, одна точка',
+    price: '5 000',
+    period: '/ мес',
+    billing: null,
+    desc: 'Ежемесячная оплата. Удобно попробовать и оценить.',
     features: [
-      'До 500 сообщений / мес',
-      '1 сообщество VK',
+      'Подключение к VK сообществу',
       'Настройка под ваше меню',
       'Ответы 24/7 без участия',
       'Поддержка по почте',
@@ -24,33 +23,31 @@ const PLANS = [
     highlight: false,
   },
   {
-    name: 'Бизнес',
-    price: '6 990',
-    period: 'мес',
-    desc: 'Для активных заведений с постоянным потоком сообщений',
+    price: '3 000',
+    period: '/ мес',
+    billing: '18 000 ₽ раз в 6 месяцев',
+    desc: 'Выгоднее на 40%. Оплата раз в полгода.',
     features: [
-      'До 5 000 сообщений / мес',
-      'До 3 сообществ VK',
-      'Настройка тона и стиля',
+      'Подключение к VK сообществу',
+      'Настройка под ваше меню',
+      'Ответы 24/7 без участия',
       'Приоритетная поддержка',
-      'Обновление контента',
     ],
     cta: 'Выбрать',
     highlight: true,
   },
   {
-    name: 'Сеть',
-    price: 'По запросу',
-    period: '',
-    desc: 'Для сетей, франшиз и нескольких точек',
+    price: '2 000',
+    period: '/ мес',
+    billing: '24 000 ₽ раз в год',
+    desc: 'Максимальная выгода. Оплата раз в год.',
     features: [
-      'Безлимитные сообщения',
-      'Неограниченно сообществ',
+      'Подключение к VK сообществу',
+      'Настройка под ваше меню',
+      'Ответы 24/7 без участия',
       'Персональная настройка',
-      'Выделенный менеджер',
-      'SLA 99.9% uptime',
     ],
-    cta: 'Связаться',
+    cta: 'Выбрать',
     highlight: false,
   },
 ];
@@ -88,11 +85,13 @@ export default function Pricing() {
               {plan.highlight && <div className={styles.badge}>Популярный</div>}
 
               <div className={styles.top}>
-                <p className={styles.planName}>{plan.name}</p>
                 <div className={styles.priceRow}>
-                  <span className={styles.price}>{plan.price}</span>
-                  {plan.period && <span className={styles.period}>/ {plan.period}</span>}
+                  <span className={styles.price}>{plan.price} ₽</span>
+                  <span className={styles.period}>{plan.period}</span>
                 </div>
+                {plan.billing && (
+                  <p className={styles.billing}>{plan.billing}</p>
+                )}
                 <p className={styles.planDesc}>{plan.desc}</p>
               </div>
 
