@@ -51,7 +51,7 @@ export default function Pricing() {
         <div className={styles.heading}>
           <p className={styles.eyebrow}>Тарифы</p>
           <h2 className={styles.title}>Прозрачные цены<br />без скрытых платежей</h2>
-          <p className={styles.desc}>14 дней бесплатно на любом тарифе. Карта не нужна.</p>
+          <p className={styles.desc}>Выберите тариф — первые 7 дней бесплатно на любом плане.</p>
         </div>
 
         <div className={styles.grid}>
@@ -83,6 +83,14 @@ export default function Pricing() {
               </a>
             </div>
           ))}
+        </div>
+
+        <div className={styles.trial}>
+          <span className={styles.trialIcon}>🎁</span>
+          <div>
+            <p className={styles.trialTitle}>7 дней бесплатно на любом тарифе</p>
+            <p className={styles.trialDesc}>Подключите бота к своему VK-сообществу и протестируйте на реальных клиентах. Карта не нужна — просто попробуйте.</p>
+          </div>
         </div>
       </div>
     </section>
