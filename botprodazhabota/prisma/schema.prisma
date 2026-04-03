@@ -17,6 +17,9 @@ model Client {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Subscription
+  subscriptionEndsAt DateTime?      // Дата окончания подписки (null = не задана)
+
   // VK integration
   vkGroupId     String?  @unique   // ID сообщества VK (число)
   vkAccessToken String?            // Ключ доступа сообщества (для отправки сообщений)

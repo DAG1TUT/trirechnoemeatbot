@@ -154,3 +154,40 @@
   border-top: 1px solid #2a2a3a; padding-top: 20px;
   display: flex; flex-direction: column; gap: 8px;
 }
+
+/* ── Client meta (dates) ─────────────────────────────── */
+.clientMeta {
+  display: flex; flex-direction: column; gap: 3px;
+  margin-top: 6px;
+}
+.metaItem {
+  font-size: .76rem; color: #7070a0;
+}
+.metaItem b { color: #b0b0d0; }
+
+/* ── Subscription section ───────────────────────────── */
+.subSection {
+  border-top: 1px solid #2a2a3a; padding-top: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.subRow {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.subShortcuts {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.shortcutBtn {
+  padding: 5px 12px; border-radius: 8px;
+  border: 1px solid #2a2a3a; background: #1a1a2a; color: #8080c0;
+  font-size: .74rem; cursor: pointer; font-family: inherit;
+  transition: background .15s, border-color .15s, color .15s;
+  &:hover { border-color: #3D6FBB; color: #7EB5FF; background: #1e2040; }
+}
+.saveSubBtn {
+  align-self: flex-start;
+  padding: 8px 18px; border-radius: 10px;
+  background: #22334a; border: 1px solid #3D6FBB; color: #7EB5FF;
+  font-size: .80rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: background .2s, transform .15s;
+  &:hover { background: #2a3e5e; transform: translateY(-1px); }
+}

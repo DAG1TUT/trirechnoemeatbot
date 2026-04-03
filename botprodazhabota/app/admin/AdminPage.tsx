@@ -11,10 +11,25 @@ interface Client {
   systemPrompt: string;
   isActive: boolean;
   createdAt: string;
+  subscriptionEndsAt: string | null;
   vkGroupId: string | null;
   vkAccessToken: string | null;
   vkConfirmCode: string | null;
   vkSecretKey: string | null;
+}
+
+function fmtDate(iso: string | null | undefined) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function subStatus(endsAt: string | null | undefined): { label: string; color: string } {
+  if (!endsAt) return { label: 'Не задана', color: '#888' };
+  const diff = new Date(endsAt).getTime() - Date.now();
+  const days = Math.ceil(diff / 86400000);
+  if (days < 0)  return { label: 'Истекла', color: '#e55' };
+  if (days <= 7) return { label: `${days} дн.`, color: '#f90' };
+  return { label: `${days} дн.`, color: '#4c9' };
 }
 
 const BIZ_TYPES = [
@@ -153,6 +168,18 @@ export default function AdminPage() {
                   {c.vkGroupId ? '✓ VK подключён' : '○ VK не настроен'}
                 </span>
               </div>
+              <div className={styles.clientMeta}>
+                <span className={styles.metaItem}>
+                  📅 Подключён: <b>{fmtDate(c.createdAt)}</b>
+                </span>
+                <span className={styles.metaItem}>
+                  ⏳ Подписка:{' '}
+                  <b style={{ color: subStatus(c.subscriptionEndsAt).color }}>
+                    {c.subscriptionEndsAt ? fmtDate(c.subscriptionEndsAt) : '—'}&nbsp;
+                    ({subStatus(c.subscriptionEndsAt).label})
+                  </b>
+                </span>
+              </div>
               <div className={styles.clientActions}>
                 <span className={`${styles.status} ${c.isActive ? styles.active : styles.off}`}>
                   {c.isActive ? 'Активен' : 'Откл.'}
@@ -272,6 +299,50 @@ export default function AdminPage() {
                 <button className={styles.saveVKBtn} onClick={() => saveVK(c)}>
                   Сохранить и подключить VK ✓
                 </button>
+
+                {/* Subscription management */}
+                <div className={styles.subSection}>
+                  <p className={styles.stepTitle}>Срок подписки</p>
+                  <p className={styles.stepDesc}>
+                    Текущая дата подключения: <b>{fmtDate(c.createdAt)}</b>.
+                    Укажите дату окончания подписки клиента.
+                  </p>
+                  <div className={styles.subRow}>
+                    <input
+                      type="date"
+                      className={styles.vkInput}
+                      defaultValue={c.subscriptionEndsAt ? c.subscriptionEndsAt.slice(0, 10) : ''}
+                      id={`sub-${c.id}`}
+                    />
+                    <div className={styles.subShortcuts}>
+                      {[
+                        { label: '+7 дней',   days: 7 },
+                        { label: '+1 месяц',  days: 30 },
+                        { label: '+6 мес',    days: 180 },
+                        { label: '+1 год',    days: 365 },
+                      ].map(({ label, days }) => (
+                        <button key={days} className={styles.shortcutBtn} onClick={() => {
+                          const base = c.subscriptionEndsAt && new Date(c.subscriptionEndsAt) > new Date()
+                            ? new Date(c.subscriptionEndsAt)
+                            : new Date();
+                          base.setDate(base.getDate() + days);
+                          const iso = base.toISOString().slice(0, 10);
+                          const el = document.getElementById(`sub-${c.id}`) as HTMLInputElement;
+                          if (el) el.value = iso;
+                        }}>{label}</button>
+                      ))}
+                    </div>
+                    <button className={styles.saveSubBtn} onClick={async () => {
+                      const el = document.getElementById(`sub-${c.id}`) as HTMLInputElement;
+                      const val = el?.value ? new Date(el.value).toISOString() : null;
+                      await fetch(`/api/client/${c.apiKey}`, {
+                        method: 'PATCH', headers: hdrs(),
+                        body: JSON.stringify({ subscriptionEndsAt: val }),
+                      });
+                      load();
+                    }}>Сохранить срок</button>
+                  </div>
+                </div>
 
                 {/* Prompt editor */}
                 <div className={styles.promptSection}>

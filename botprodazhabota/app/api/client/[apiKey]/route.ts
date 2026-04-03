@@ -30,6 +30,7 @@ export async function PATCH(
   const allowed = [
     'businessName', 'businessType', 'systemPrompt', 'isActive',
     'vkGroupId', 'vkAccessToken', 'vkConfirmCode', 'vkSecretKey',
+    'subscriptionEndsAt',
   ] as const;
   const update = Object.fromEntries(
     Object.entries(data).filter(([k]) => allowed.includes(k as typeof allowed[number]))

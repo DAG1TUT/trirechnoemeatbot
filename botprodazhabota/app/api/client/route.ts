@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: 'desc' },
     select: { id: true, apiKey: true, businessName: true, businessType: true,
                systemPrompt: true, isActive: true, createdAt: true,
+               subscriptionEndsAt: true,
                vkGroupId: true, vkAccessToken: true, vkConfirmCode: true, vkSecretKey: true },
   });
   return Response.json(clients);
