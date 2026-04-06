@@ -9,25 +9,18 @@ gsap.registerPlugin(ScrollTrigger);
 
 const PLANS = [
   {
-    price: '5 000',
-    billing: 'Ежемесячно',
+    price: '3 500',
+    billing: '10 500 ₽ / 3 месяца',
     sub: null,
-    cta: 'Начать',
+    cta: 'Выбрать',
     highlight: false,
   },
   {
     price: '3 000',
     billing: '18 000 ₽ / полгода',
-    sub: 'Выгода 40%',
+    sub: '≈ 99 ₽ в день',
     cta: 'Выбрать',
     highlight: true,
-  },
-  {
-    price: '2 000',
-    billing: '24 000 ₽ / год',
-    sub: 'Выгода 60%',
-    cta: 'Выбрать',
-    highlight: false,
   },
 ];
 
