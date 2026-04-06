@@ -24,17 +24,28 @@ async function sendVK(token: string, userId: number, text: string) {
 }
 
 /* ── Get AI reply ─────────────────────────────────────────────────── */
+function moscowTime() {
+  const now = new Date();
+  const fmt = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Europe/Moscow',
+    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+  return fmt.format(now);
+}
+
 async function getAIReply(userMessage: string, systemPrompt: string): Promise<string> {
   if (!process.env.OPENAI_API_KEY) {
     return 'Добрый день! Чем могу помочь?';
   }
+  const timeContext = `\n\nСейчас: ${moscowTime()} (Москва). Учитывай текущее время при ответах — например, если заведение закрыто, сообщи об этом.`;
   try {
     const res = await openai().chat.completions.create({
       model: 'gpt-4o',
       temperature: 0.65,
       max_tokens: 300,
       messages: [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: systemPrompt + timeContext },
         { role: 'user',   content: userMessage },
       ],
     });

@@ -6,6 +6,14 @@ function getClient() {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY ?? '' });
 }
 
+function moscowTime() {
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Europe/Moscow',
+    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  }).format(new Date());
+}
+
 const DEFAULT_PROMPT = `Ты — умный AI-ассистент для VK-сообщества заведения общепита.
 
 Твоя задача — отвечать на сообщения клиентов в VK: рассказывать о меню, составе блюд, ценах, времени работы, условиях доставки и других вопросах о заведении.
@@ -59,13 +67,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const timeContext = `\n\nСейчас: ${moscowTime()} (Москва). Учитывай текущее время при ответах — например, если заведение закрыто, сообщи об этом.`;
+
   const stream = await getClient().chat.completions.create({
     model: 'gpt-4o',
     stream: true,
     temperature: 0.65,
     max_tokens: 250,
     messages: [
-      { role: 'system', content: finalPrompt },
+      { role: 'system', content: finalPrompt + timeContext },
       { role: 'user',   content: message },
     ],
   });
