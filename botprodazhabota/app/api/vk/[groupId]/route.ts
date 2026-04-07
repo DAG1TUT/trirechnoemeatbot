@@ -70,13 +70,28 @@ export async function POST(
     return new Response('bad request', { status: 400 });
   }
 
-  // Find client by VK group ID
+  // VK всегда присылает group_id в теле. URL может быть скопирован с другой группы —
+  // ищем клиента по group_id из JSON, иначе по сегменту пути.
+  const gidFromBody =
+    body.group_id != null ? String(body.group_id).trim() : null;
+  const gidFromPath = String(groupId).trim();
+  const lookupId = gidFromBody || gidFromPath;
+
+  if (gidFromBody && gidFromPath && gidFromBody !== gidFromPath) {
+    console.warn(
+      '[vk] URL groupId mismatch body.group_id — using body:',
+      gidFromPath,
+      '→',
+      gidFromBody
+    );
+  }
+
   const client = await prisma.client.findFirst({
-    where: { vkGroupId: groupId, isActive: true },
+    where: { vkGroupId: lookupId, isActive: true },
   });
 
   if (!client) {
-    console.warn('[vk] Unknown group:', groupId);
+    console.warn('[vk] Unknown group — lookupId:', lookupId, 'path:', gidFromPath);
     return new Response('ok'); // Don't expose 404 to VK
   }
 
@@ -111,6 +126,8 @@ export async function POST(
         const reply = await getAIReply(text, client.systemPrompt);
         if (client.vkAccessToken) {
           await sendVK(client.vkAccessToken, fromId, reply);
+        } else {
+          console.error('[vk] No vkAccessToken for client', client.businessName, client.id);
         }
       } catch (e) {
         console.error('[vk] background handler error:', e);

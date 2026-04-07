@@ -227,6 +227,9 @@ export default function AdminPage() {
                   <div className={styles.stepNum}>3</div>
                   <div className={styles.stepBody}>
                     <p className={styles.stepTitle}>Вставьте этот URL в поле «Адрес сервера» VK</p>
+                    <p className={styles.stepDesc}>
+                      У каждого сообщества свой ID в ссылке — не копируйте URL от другого клиента.
+                    </p>
                     <div className={styles.urlRow}>
                       <code className={styles.urlBox}>
                         {vkEdit.vkGroupId
