@@ -1,12 +1,20 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import OpenAI from 'openai';
 
 const VK_API = 'https://api.vk.com/method';
 const VK_VERSION = '5.199';
 
+const OPENAI_TIMEOUT_MS = 30_000;
+const VK_FETCH_TIMEOUT_MS = 15_000;
+const VK_RETRY_ATTEMPTS = 2;
+
 function openai() {
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY ?? '' });
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY ?? '',
+    timeout: OPENAI_TIMEOUT_MS,
+    maxRetries: 2,
+  });
 }
 
 /* ── Send a message back to VK user ──────────────────────────────── */
@@ -18,9 +26,27 @@ async function sendVK(token: string, userId: number, text: string) {
     access_token: token,
     v: VK_VERSION,
   });
-  const res = await fetch(`${VK_API}/messages.send?${params}`);
-  const json = await res.json();
-  if (json.error) console.error('[vk] messages.send error:', json.error);
+
+  for (let attempt = 1; attempt <= VK_RETRY_ATTEMPTS; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), VK_FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(`${VK_API}/messages.send?${params}`, {
+        signal: controller.signal,
+      });
+      const json = await res.json();
+      if (json.error) {
+        console.error('[vk] messages.send error:', json.error);
+      }
+      return;
+    } catch (e) {
+      console.error(`[vk] sendVK attempt ${attempt}/${VK_RETRY_ATTEMPTS} failed:`, e);
+      if (attempt === VK_RETRY_ATTEMPTS) throw e;
+      await new Promise(r => setTimeout(r, 1_000 * attempt));
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 }
 
 /* ── Get AI reply ─────────────────────────────────────────────────── */
@@ -120,8 +146,8 @@ export async function POST(
       return new Response('ok');
     }
 
-    // Fire and forget — don't await (VK needs "ok" within 5s)
-    (async () => {
+    // Use after() so the background work survives after the response is sent
+    after(async () => {
       try {
         const reply = await getAIReply(text, client.systemPrompt);
         if (client.vkAccessToken) {
@@ -132,7 +158,7 @@ export async function POST(
       } catch (e) {
         console.error('[vk] background handler error:', e);
       }
-    })();
+    });
   }
 
   return new Response('ok');
